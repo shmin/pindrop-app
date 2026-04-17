@@ -407,66 +407,64 @@ function toast(msg, type='success') {
   setTimeout(()=>t.classList.remove('show'),3000);
 }
 
+// ── Context menu functions (module scope) ──
+let pressTimer = null;
+let pressStarted = false;
+
+function getAddr(lat, lng, cb) {
+  const gc = new kakao.maps.services.Geocoder();
+  gc.coord2Address(lng, lat, (res, status) => {
+    if (status === kakao.maps.services.Status.OK && res[0]) {
+      const addr = res[0].road_address ? res[0].road_address.address_name : res[0].address.address_name;
+      cb(addr);
+    } else {
+      cb(lat.toFixed(5) + ', ' + lng.toFixed(5));
+    }
+  });
+}
+
+function showContextMenu(lat, lng, x, y) {
+  if (!currentUser) { toast('먼저 로그인해주세요! 🔐', 'error'); return; }
+  closeInfo();
+  pendingLat = lat; pendingLng = lng;
+  document.getElementById('ctx-addr').textContent = '📍 주소 불러오는 중...';
+  getAddr(lat, lng, addr => {
+    document.getElementById('ctx-addr').textContent = '📍 ' + addr;
+    document.getElementById('f-loc').value = addr;
+    document.getElementById('loc-preview').textContent = '📍 ' + addr;
+    document.getElementById('loc-preview').classList.add('show');
+  });
+  const menu = document.getElementById('ctx-menu');
+  const vw = window.innerWidth, vh = window.innerHeight;
+  let mx = x, my = y;
+  if (mx + 200 > vw - 10) mx = vw - 210;
+  if (my + 160 > vh - 10) my = y - 170;
+  if (my < 80) my = 80;
+  menu.style.left = mx + 'px';
+  menu.style.top = my + 'px';
+  menu.style.display = 'block';
+  requestAnimationFrame(() => menu.classList.add('show'));
+}
+
+function hideContextMenu() {
+  const menu = document.getElementById('ctx-menu');
+  menu.classList.remove('show');
+  setTimeout(() => { menu.style.display = 'none'; }, 180);
+}
+
+function showRipple(x, y) {
+  const r = document.getElementById('press-ripple');
+  r.style.left = x + 'px'; r.style.top = y + 'px';
+  r.classList.remove('animate');
+  requestAnimationFrame(() => r.classList.add('animate'));
+}
+
 // Kakao map init
 function initMap() {
   kakaoMap = new kakao.maps.Map(document.getElementById('kakao-map'), {
     center: new kakao.maps.LatLng(37.5665,126.9780), level:7
   });
   kakaoMap.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
-
-  // ── Long press on map ──
-  let pressTimer = null;
-  let pressStarted = false;
-
-  function getAddr(lat, lng, cb) {
-    const gc = new kakao.maps.services.Geocoder();
-    gc.coord2Address(lng, lat, (res, status) => {
-      if (status === kakao.maps.services.Status.OK && res[0]) {
-        const addr = res[0].road_address ? res[0].road_address.address_name : res[0].address.address_name;
-        cb(addr);
-      } else {
-        cb(lat.toFixed(5) + ', ' + lng.toFixed(5));
-      }
-    });
-  }
-
-  function showContextMenu(lat, lng, x, y) {
-    if (!currentUser) { toast('먼저 로그인해주세요! 🔐', 'error'); return; }
-    closeInfo();
-    pendingLat = lat; pendingLng = lng;
-    document.getElementById('ctx-addr').textContent = '📍 주소 불러오는 중...';
-
-    getAddr(lat, lng, addr => {
-      document.getElementById('ctx-addr').textContent = '📍 ' + addr;
-      document.getElementById('f-loc').value = addr;
-      document.getElementById('loc-preview').textContent = '📍 ' + addr;
-      document.getElementById('loc-preview').classList.add('show');
-    });
-
-    const menu = document.getElementById('ctx-menu');
-    const vw = window.innerWidth, vh = window.innerHeight;
-    let mx = x, my = y;
-    if (mx + 200 > vw - 10) mx = vw - 210;
-    if (my + 160 > vh - 10) my = y - 170;
-    if (my < 80) my = 80;
-    menu.style.left = mx + 'px';
-    menu.style.top = my + 'px';
-    menu.style.display = 'block';
-    requestAnimationFrame(() => menu.classList.add('show'));
-  }
-
-  function hideContextMenu() {
-    const menu = document.getElementById('ctx-menu');
-    menu.classList.remove('show');
-    setTimeout(() => { menu.style.display = 'none'; }, 180);
-  }
-
-  function showRipple(x, y) {
-    const r = document.getElementById('press-ripple');
-    r.style.left = x + 'px'; r.style.top = y + 'px';
-    r.classList.remove('animate');
-    requestAnimationFrame(() => r.classList.add('animate'));
-  }
 
   // Kakao mouse long press (desktop)
   kakao.maps.event.addListener(kakaoMap, 'mousedown', e => {
@@ -621,20 +619,16 @@ function renderMarkers(){
       if(el&&el.outerHTML!==undefined) markers[ev.id].overlay.setContent(makeMarkerHTML(ev));
       return;
     }
-    const overlay=new kakao.maps.CustomOverlay({position:pos,content:makeMarkerHTML(ev),yAnchor:1,zIndex:3});
+    const evId = ev.id;
+    const markerDiv = document.createElement('div');
+    markerDiv.innerHTML = makeMarkerHTML(ev);
+    markerDiv.firstElementChild.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showInfo(evId);
+    });
+    const overlay=new kakao.maps.CustomOverlay({position:pos,content:markerDiv.firstElementChild,yAnchor:1,zIndex:3});
     overlay.setMap(kakaoMap);
     markers[ev.id]={overlay};
-    // Click binding (retry until DOM ready)
-    let tries=0;
-    const bind=setInterval(()=>{
-      const el=document.querySelector(`.k-marker`);
-      // bind by finding overlay node
-      const node=overlay.getContent();
-      if(node&&node.addEventListener){
-        node.addEventListener('click',()=>showInfo(ev.id));
-        clearInterval(bind);
-      } else if(++tries>20) clearInterval(bind);
-    },150);
   });
 }
 
@@ -731,19 +725,21 @@ document.getElementById('cat-chips').addEventListener('click',e=>{
 // Context menu actions
 document.getElementById('ctx-add-pin').addEventListener('click', () => {
   hideContextMenu();
-  openModal();
+  setTimeout(() => openModal(), 200); // 메뉴 닫힌 후 모달 열기
 });
-document.getElementById('ctx-cancel').addEventListener('click', hideContextMenu);
+document.getElementById('ctx-cancel').addEventListener('click', () => {
+  hideContextMenu();
+});
 
 // Close menu on outside tap
-document.addEventListener('click', e => {
+document.addEventListener('touchstart', e => {
   const menu = document.getElementById('ctx-menu');
-  if (!menu.contains(e.target)) hideContextMenu();
-});
+  if (menu.style.display !== 'none' && !menu.contains(e.target)) hideContextMenu();
+}, {passive: true});
 
 // Location button
 document.getElementById('loc-btn').addEventListener('click', () => {
-  if (!kakaoMap) return;
+  if (!kakaoMap) { toast('지도가 아직 로딩 중이에요', 'error'); return; }
   moveToCurrentLocation(kakaoMap, true);
 });
 
