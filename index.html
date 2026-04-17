@@ -471,7 +471,7 @@ function initMap() {
       if (!pressStarted) return;
       showRipple(x, y);
       showContextMenu(e.latLng.getLat(), e.latLng.getLng(), x, y);
-    }, 600);
+    }, 2000);
   });
   kakao.maps.event.addListener(kakaoMap, 'mouseup', () => { pressStarted=false; clearTimeout(pressTimer); });
   kakao.maps.event.addListener(kakaoMap, 'drag', () => { pressStarted=false; clearTimeout(pressTimer); });
@@ -493,7 +493,7 @@ function initMap() {
       if (!pressStarted) return;
       showRipple(touchX, touchY);
       showContextMenu(touchLat, touchLng, touchX, touchY);
-    }, 600);
+    }, 2000);
   }, {passive: true});
   mapEl.addEventListener('touchend', () => { pressStarted=false; clearTimeout(pressTimer); }, {passive: true});
   mapEl.addEventListener('touchmove', () => { pressStarted=false; clearTimeout(pressTimer); }, {passive: true});
