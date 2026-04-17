@@ -149,6 +149,11 @@ textarea{resize:none;height:60px;}
 .toast.success{border-color:var(–accent3);color:var(–accent3);}
 .toast.error{border-color:var(–accent);color:var(–accent);}
 
+/* Location button */
+.loc-btn{position:fixed;right:18px;bottom:260px;z-index:200;width:44px;height:44px;border-radius:50%;background:rgba(20,20,32,0.97);border:1px solid rgba(255,255,255,0.12);color:#fff;font-size:20px;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(12px);transition:transform 0.15s;}
+.loc-btn:active{transform:scale(0.92);}
+.loc-btn svg{width:22px;height:22px;}
+
 /* Kakao custom marker */
 .k-marker{display:flex;flex-direction:column;align-items:center;cursor:pointer;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.5));}
 .k-pin{width:42px;height:52px;border-radius:50% 50% 50% 0;display:flex;align-items:center;justify-content:center;transform:rotate(-45deg);transition:transform 0.15s;}
@@ -217,6 +222,16 @@ textarea{resize:none;height:60px;}
 <!-- FAB -->
 
 <button class="fab" id="fab">＋</button>
+
+<!-- Location button -->
+
+<button class="loc-btn" id="loc-btn" title="현재 위치">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+    <circle cx="12" cy="12" r="8" stroke-opacity="0.3"/>
+  </svg>
+</button>
 
 <!-- Info popup -->
 
@@ -355,6 +370,10 @@ function initMap() {
     center: new kakao.maps.LatLng(37.5665,126.9780), level:7
   });
   kakaoMap.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
+
+  // 앱 시작시 현재 위치로 이동
+  moveToCurrentLocation(kakaoMap, false);
+
   kakao.maps.event.addListener(kakaoMap,'click', e => {
     if (!currentUser) { toast('먼저 로그인해주세요! 🔐','error'); return; }
     closeInfo();
@@ -373,6 +392,22 @@ function initMap() {
     openModal();
   });
   document.getElementById('loading').classList.add('hidden');
+}
+
+// ── Geolocation ──
+function moveToCurrentLocation(map, showToast=false) {
+  if (!navigator.geolocation) { if(showToast) toast('위치 정보를 지원하지 않는 브라우저예요', 'error'); return; }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      const latlng = new kakao.maps.LatLng(lat, lng);
+      map.setCenter(latlng);
+      map.setLevel(4);
+      if (showToast) toast('현재 위치로 이동했어요 📍');
+    },
+    err => { if(showToast) toast('위치 권한을 허용해주세요', 'error'); }
+  );
 }
 
 let kakaoRetry=0;
@@ -569,6 +604,12 @@ document.getElementById('cat-chips').addEventListener('click',e=>{
   document.querySelectorAll('.cat-chip').forEach(c=>c.classList.remove('active'));
   chip.classList.add('active'); activeFilter=chip.getAttribute('data-cat');
   closeInfo(); renderMarkers(); renderCards();
+});
+
+// Location button
+document.getElementById('loc-btn').addEventListener('click', () => {
+  if (!kakaoMap) return;
+  moveToCurrentLocation(kakaoMap, true);
 });
 
 // FAB
