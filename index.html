@@ -14,6 +14,13 @@
     --text:#f0f0f5; --muted:#8888aa; --bg:#0a0a0f;
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  /* 길게 누르기 시 브라우저 기본 메뉴 차단 */
+  #kakao-map, #kakao-map * {
+    -webkit-touch-callout:none;
+    -webkit-user-select:none;
+    user-select:none;
+    -webkit-user-drag:none;
+  }
   body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);height:100dvh;overflow:hidden;position:relative;}
 
 /* ── Full screen map ── */
@@ -497,6 +504,9 @@ function initMap() {
   }, {passive: true});
   mapEl.addEventListener('touchend', () => { pressStarted=false; clearTimeout(pressTimer); }, {passive: true});
   mapEl.addEventListener('touchmove', () => { pressStarted=false; clearTimeout(pressTimer); }, {passive: true});
+
+  // 브라우저 기본 컨텍스트 메뉴(이미지 저장 등) 차단
+  mapEl.addEventListener('contextmenu', e => e.preventDefault());
   // 지도 타일 로드 완료 후 현재 위치로 이동
   kakao.maps.event.addListener(kakaoMap, 'tilesloaded', function onTiles() {
     kakao.maps.event.removeListener(kakaoMap, 'tilesloaded', onTiles);
