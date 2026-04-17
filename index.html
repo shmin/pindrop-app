@@ -371,9 +371,6 @@ function initMap() {
   });
   kakaoMap.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
 
-  // 앱 시작시 현재 위치로 이동
-  moveToCurrentLocation(kakaoMap, false);
-
   kakao.maps.event.addListener(kakaoMap,'click', e => {
     if (!currentUser) { toast('먼저 로그인해주세요! 🔐','error'); return; }
     closeInfo();
@@ -391,6 +388,12 @@ function initMap() {
     });
     openModal();
   });
+  // 지도 타일 로드 완료 후 현재 위치로 이동
+  kakao.maps.event.addListener(kakaoMap, 'tilesloaded', function onTiles() {
+    kakao.maps.event.removeListener(kakaoMap, 'tilesloaded', onTiles);
+    moveToCurrentLocation(kakaoMap, false);
+  });
+
   document.getElementById('loading').classList.add('hidden');
 }
 
