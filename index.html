@@ -166,8 +166,22 @@ textarea{resize:none;height:60px;}
 
 /* Realtime indicator */
 .rt-dot{width:7px;height:7px;border-radius:50%;background:var(–accent3);box-shadow:0 0 6px var(–accent3);animation:pgreen 2s infinite;flex-shrink:0;}
-</style>
+/* ── Long press context menu ── */
+.ctx-menu{position:fixed;z-index:300;background:rgba(18,18,28,0.97);border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:8px;min-width:180px;box-shadow:0 8px 32px rgba(0,0,0,0.6);backdrop-filter:blur(20px);display:none;transform:scale(0.92);opacity:0;transition:transform 0.18s cubic-bezier(0.34,1.56,0.64,1),opacity 0.15s;}
+.ctx-menu.show{display:block;transform:scale(1);opacity:1;}
+.ctx-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;cursor:pointer;transition:background 0.15s;font-size:14px;color:var(–text);}
+.ctx-item:active{background:rgba(255,255,255,0.08);}
+.ctx-item-icon{font-size:20px;width:28px;text-align:center;flex-shrink:0;}
+.ctx-item-label{font-weight:500;}
+.ctx-item-sub{font-size:11px;color:var(–muted);margin-top:1px;}
+.ctx-divider{height:1px;background:rgba(255,255,255,0.06);margin:4px 0;}
+.ctx-addr{padding:10px 14px 6px;font-size:11px;color:var(–muted);border-bottom:1px solid rgba(255,255,255,0.06);margin-bottom:4px;display:flex;align-items:center;gap:6px;}
 
+/* Long press ripple */
+.press-ripple{position:fixed;width:60px;height:60px;border-radius:50%;background:rgba(255,77,109,0.25);border:2px solid rgba(255,77,109,0.5);transform:translate(-50%,-50%) scale(0);pointer-events:none;z-index:250;transition:transform 0.6s ease,opacity 0.6s ease;}
+.press-ripple.animate{transform:translate(-50%,-50%) scale(1);opacity:0;}
+
+</style>
 </head>
 <body>
 
@@ -221,7 +235,7 @@ textarea{resize:none;height:60px;}
 
 <!-- FAB -->
 
-<button class="fab" id="fab">＋</button>
+<button class="fab" id="fab">📌</button>
 
 <!-- Location button -->
 
@@ -264,6 +278,28 @@ textarea{resize:none;height:60px;}
   </div>
   <div class="cards-scroll" id="cards-scroll"></div>
 </div>
+
+<!-- Long press context menu -->
+
+<div class="ctx-menu" id="ctx-menu">
+  <div class="ctx-addr" id="ctx-addr">📍 위치 불러오는 중...</div>
+  <div class="ctx-item" id="ctx-add-pin">
+    <span class="ctx-item-icon">📌</span>
+    <div>
+      <div class="ctx-item-label">이벤트 핀 꽂기</div>
+      <div class="ctx-item-sub">이 위치에 이벤트 등록</div>
+    </div>
+  </div>
+  <div class="ctx-divider"></div>
+  <div class="ctx-item" id="ctx-cancel">
+    <span class="ctx-item-icon">✕</span>
+    <div class="ctx-item-label" style="color:var(--muted)">취소</div>
+  </div>
+</div>
+
+<!-- Long press ripple -->
+
+<div class="press-ripple" id="press-ripple"></div>
 
 <!-- Add Modal (bottom sheet style) -->
 
@@ -371,23 +407,96 @@ function initMap() {
   });
   kakaoMap.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
 
-  kakao.maps.event.addListener(kakaoMap,'click', e => {
-    if (!currentUser) { toast('먼저 로그인해주세요! 🔐','error'); return; }
-    closeInfo();
-    pendingLat=e.latLng.getLat(); pendingLng=e.latLng.getLng();
-    const gc=new kakao.maps.services.Geocoder();
-    gc.coord2Address(pendingLng,pendingLat,(res,status)=>{
-      if(status===kakao.maps.services.Status.OK&&res[0]){
-        const addr=res[0].road_address?res[0].road_address.address_name:res[0].address.address_name;
-        document.getElementById('f-loc').value=addr;
-        document.getElementById('loc-preview').textContent='📍 '+addr;
+  // ── Long press on map ──
+  let pressTimer = null;
+  let pressStarted = false;
+
+  function getAddr(lat, lng, cb) {
+    const gc = new kakao.maps.services.Geocoder();
+    gc.coord2Address(lng, lat, (res, status) => {
+      if (status === kakao.maps.services.Status.OK && res[0]) {
+        const addr = res[0].road_address ? res[0].road_address.address_name : res[0].address.address_name;
+        cb(addr);
       } else {
-        document.getElementById('loc-preview').textContent=`📍 ${pendingLat.toFixed(5)}, ${pendingLng.toFixed(5)}`;
+        cb(lat.toFixed(5) + ', ' + lng.toFixed(5));
       }
+    });
+  }
+
+  function showContextMenu(lat, lng, x, y) {
+    if (!currentUser) { toast('먼저 로그인해주세요! 🔐', 'error'); return; }
+    closeInfo();
+    pendingLat = lat; pendingLng = lng;
+    document.getElementById('ctx-addr').textContent = '📍 주소 불러오는 중...';
+
+    getAddr(lat, lng, addr => {
+      document.getElementById('ctx-addr').textContent = '📍 ' + addr;
+      document.getElementById('f-loc').value = addr;
+      document.getElementById('loc-preview').textContent = '📍 ' + addr;
       document.getElementById('loc-preview').classList.add('show');
     });
-    openModal();
+
+    const menu = document.getElementById('ctx-menu');
+    const vw = window.innerWidth, vh = window.innerHeight;
+    let mx = x, my = y;
+    if (mx + 200 > vw - 10) mx = vw - 210;
+    if (my + 160 > vh - 10) my = y - 170;
+    if (my < 80) my = 80;
+    menu.style.left = mx + 'px';
+    menu.style.top = my + 'px';
+    menu.style.display = 'block';
+    requestAnimationFrame(() => menu.classList.add('show'));
+  }
+
+  function hideContextMenu() {
+    const menu = document.getElementById('ctx-menu');
+    menu.classList.remove('show');
+    setTimeout(() => { menu.style.display = 'none'; }, 180);
+  }
+
+  function showRipple(x, y) {
+    const r = document.getElementById('press-ripple');
+    r.style.left = x + 'px'; r.style.top = y + 'px';
+    r.classList.remove('animate');
+    requestAnimationFrame(() => r.classList.add('animate'));
+  }
+
+  // Kakao mouse long press (desktop)
+  kakao.maps.event.addListener(kakaoMap, 'mousedown', e => {
+    pressStarted = true;
+    const orig = e.originalEvent || window.event;
+    const x = orig ? orig.clientX : 0;
+    const y = orig ? orig.clientY : 0;
+    pressTimer = setTimeout(() => {
+      if (!pressStarted) return;
+      showRipple(x, y);
+      showContextMenu(e.latLng.getLat(), e.latLng.getLng(), x, y);
+    }, 600);
   });
+  kakao.maps.event.addListener(kakaoMap, 'mouseup', () => { pressStarted=false; clearTimeout(pressTimer); });
+  kakao.maps.event.addListener(kakaoMap, 'drag', () => { pressStarted=false; clearTimeout(pressTimer); });
+  kakao.maps.event.addListener(kakaoMap, 'click', () => hideContextMenu());
+
+  // Touch long press (mobile)
+  const mapEl = document.getElementById('kakao-map');
+  let touchLat = 0, touchLng = 0, touchX = 0, touchY = 0;
+  mapEl.addEventListener('touchstart', e => {
+    pressStarted = true;
+    const t = e.touches[0];
+    touchX = t.clientX; touchY = t.clientY;
+    const rect = mapEl.getBoundingClientRect();
+    const proj = kakaoMap.getProjection();
+    const point = new kakao.maps.Point(t.clientX - rect.left, t.clientY - rect.top);
+    const ll = proj.coordsFromContainerPoint(point);
+    touchLat = ll.getLat(); touchLng = ll.getLng();
+    pressTimer = setTimeout(() => {
+      if (!pressStarted) return;
+      showRipple(touchX, touchY);
+      showContextMenu(touchLat, touchLng, touchX, touchY);
+    }, 600);
+  }, {passive: true});
+  mapEl.addEventListener('touchend', () => { pressStarted=false; clearTimeout(pressTimer); }, {passive: true});
+  mapEl.addEventListener('touchmove', () => { pressStarted=false; clearTimeout(pressTimer); }, {passive: true});
   // 지도 타일 로드 완료 후 현재 위치로 이동
   kakao.maps.event.addListener(kakaoMap, 'tilesloaded', function onTiles() {
     kakao.maps.event.removeListener(kakaoMap, 'tilesloaded', onTiles);
@@ -609,20 +718,29 @@ document.getElementById('cat-chips').addEventListener('click',e=>{
   closeInfo(); renderMarkers(); renderCards();
 });
 
+// Context menu actions
+document.getElementById('ctx-add-pin').addEventListener('click', () => {
+  hideContextMenu();
+  openModal();
+});
+document.getElementById('ctx-cancel').addEventListener('click', hideContextMenu);
+
+// Close menu on outside tap
+document.addEventListener('click', e => {
+  const menu = document.getElementById('ctx-menu');
+  if (!menu.contains(e.target)) hideContextMenu();
+});
+
 // Location button
 document.getElementById('loc-btn').addEventListener('click', () => {
   if (!kakaoMap) return;
   moveToCurrentLocation(kakaoMap, true);
 });
 
-// FAB
+// FAB — show hint toast
 document.getElementById('fab').addEventListener('click',()=>{
   if(!currentUser){toast('먼저 로그인해주세요! 🔐','error');return;}
-  const center=kakaoMap?kakaoMap.getCenter():null;
-  if(center){pendingLat=center.getLat();pendingLng=center.getLng();}
-  document.getElementById('loc-preview').textContent='📍 지도 중심 위치';
-  document.getElementById('loc-preview').classList.add('show');
-  openModal();
+  toast('지도를 길게 눌러 핀을 꽂으세요 📌');
 });
 
 function openModal(){
