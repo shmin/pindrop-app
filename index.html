@@ -15,7 +15,7 @@
     --header-h:56px; --bottombar-h:64px; --cards-h:160px;
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  #kakao-map,#kakao-map *{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-user-drag:none;}
+  #kakao-map img{-webkit-touch-callout:none;-webkit-user-drag:none;}  /* 이미지 저장 메뉴만 차단 */
   body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);height:100dvh;overflow:hidden;display:flex;flex-direction:column;}
 
 /* ══════════════════════════
@@ -223,9 +223,11 @@ LOADING / LOGIN / TOAST
 .k-label{background:rgba(8,8,18,0.88);color:#e0e0f0;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;font-family:‘Noto Sans KR’,sans-serif;margin-top:2px;max-width:80px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;border:1px solid rgba(255,255,255,0.06);}
 .k-urgent{width:7px;height:7px;border-radius:50%;margin:2px auto 0;animation:pgreen 1s infinite;}
 
-/* Gesture block */
-.top-bar,.bottom-bar,.modal-overlay,.ctx-menu,.info-popup,.search-bar{touch-action:none;}
+/* Gesture block — map-area는 터치 자유, UI만 차단 */
+.header,.bottom-bar,.modal-overlay,.ctx-menu,.search-bar{touch-action:none;}
 .cat-bar,.cards-scroll{touch-action:pan-x;}
+.map-area{touch-action:auto;}
+#kakao-map{touch-action:auto;}
 </style>
 
 </head>
