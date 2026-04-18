@@ -990,27 +990,27 @@ function endDrag(clientX, clientY) {
   });
 }
 
-// Touch events on FAB
+// Touch events: start on FAB, track on document (따라가기)
 fabBtn.addEventListener('touchstart', e => {
   const t = e.touches[0];
   if (startDrag(t.clientX, t.clientY)) e.preventDefault();
 }, {passive: false});
 
-fabBtn.addEventListener('touchmove', e => {
+// document 전체에서 touchmove/touchend 감지 (손가락이 FAB 밖으로 나가도 추적)
+document.addEventListener('touchmove', e => {
   if (!isDragging) return;
   e.preventDefault();
   const t = e.touches[0];
-  moveDrag(t.clientX, t.clientY);
+  if (t) moveDrag(t.clientX, t.clientY);
 }, {passive: false});
 
-fabBtn.addEventListener('touchend', e => {
+document.addEventListener('touchend', e => {
   if (!isDragging) return;
-  e.preventDefault();
   const t = e.changedTouches[0];
-  endDrag(t.clientX, t.clientY);
+  if (t) endDrag(t.clientX, t.clientY);
 }, {passive: false});
 
-fabBtn.addEventListener('touchcancel', () => {
+document.addEventListener('touchcancel', () => {
   if (isDragging) {
     isDragging = false;
     fabBtn.classList.remove('dragging');
