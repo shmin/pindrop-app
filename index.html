@@ -158,7 +158,7 @@ input:focus,textarea:focus{border-color:var(–accent);}
 .spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,0.08);border-top-color:var(–accent);border-radius:50%;animation:spin 0.8s linear infinite;}
 
 /* LOGIN */
-.login-screen{position:fixed;inset:0;background:var(–bg);z-index:900;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;}
+.login-screen{position:fixed;inset:0;background:#0a0a0f;z-index:950;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;transition:opacity 0.3s;}
 .login-screen.hidden{display:none;}
 .login-logo{font-family:‘Gmarket Sans’,sans-serif;font-size:48px;font-weight:700;background:linear-gradient(135deg,var(–accent),var(–accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px;}
 .login-sub{font-size:14px;color:var(–muted);text-align:center;line-height:1.7;margin-bottom:40px;}
@@ -188,7 +188,7 @@ input:focus,textarea:focus{border-color:var(–accent);}
   <div class="loading-text" id="loading-text" style="font-size:13px;color:var(--muted);">앱 초기화 중...</div>
 </div>
 
-<div class="login-screen hidden" id="login-screen">
+<div class="login-screen" id="login-screen" style="opacity:0;">
   <div class="login-logo">PinDrop</div>
   <div class="login-sub">실시간 지역 이벤트 공유 지도<br>내 주변 팝업, 세일, 공연을 발견하세요 🗺️</div>
   <button class="google-btn" id="google-login-btn">
@@ -553,10 +553,9 @@ getRedirectResult(auth).catch(() => {}).finally(() => {
 
     if (user) {
       chip.innerHTML = `<img src="${user.photoURL||''}" onerror="this.style.display='none'"/><span>${(user.displayName||'').split(' ')[0]}</span>`;
-      loginScreen.classList.add('hidden');
+      loginScreen.style.display = 'none';
       document.getElementById('loading-text').textContent = '지도 불러오는 중...';
       loading.classList.remove('hidden');
-      // Wait for map
       const waitMap = () => new Promise(resolve => {
         if (kakaoMap) { resolve(); return; }
         const check = setInterval(() => {
@@ -571,7 +570,8 @@ getRedirectResult(auth).catch(() => {}).finally(() => {
     } else {
       chip.innerHTML = '<span>로그인</span>';
       loading.classList.add('hidden');
-      loginScreen.classList.remove('hidden');
+      loginScreen.style.display = 'flex';
+      loginScreen.style.opacity = '1';
     }
   });
 });
