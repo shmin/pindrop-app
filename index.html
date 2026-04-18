@@ -61,7 +61,7 @@ overflow-x:auto;scrollbar-width:none;
 MAP — 지도 영역 (중간)
 ══════════════════════════ */
 .map-area{
-flex:1;position:relative;overflow:hidden;min-height:0;
+flex:1;position:relative;min-height:0;
 border-bottom:2px solid var(–border);
 }
 #kakao-map{position:absolute;inset:0;width:100%;height:100%;}
@@ -520,9 +520,6 @@ function renderMarkersFiltered(list) {
 }
 
 // ── Context menu functions (module scope) ──
-let pressTimer = null;
-let pressStarted = false;
-
 function getAddr(lat, lng, cb) {
   const gc = new kakao.maps.services.Geocoder();
   gc.coord2Address(lng, lat, (res, status) => {
@@ -578,45 +575,53 @@ function initMap() {
   });
   kakaoMap.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
 
-  // Kakao mouse long press (desktop)
+  // ── Long press 감지 (통합 버전) ──
+  // 카카오맵 내장 이벤트만 사용 — 지도 드래그/줌 간섭 없음
+  let lpTimer = null, lpMoved = false;
+  let lpLat = 0, lpLng = 0, lpX = 0, lpY = 0;
+
   kakao.maps.event.addListener(kakaoMap, 'mousedown', e => {
-    pressStarted = true;
-    const orig = e.originalEvent || window.event;
-    const x = orig ? orig.clientX : 0;
-    const y = orig ? orig.clientY : 0;
-    pressTimer = setTimeout(() => {
-      if (!pressStarted) return;
-      showRipple(x, y);
-      showContextMenu(e.latLng.getLat(), e.latLng.getLng(), x, y);
+    lpMoved = false;
+    lpLat = e.latLng.getLat();
+    lpLng = e.latLng.getLng();
+    // 터치 또는 마우스 위치 가져오기
+    const orig = e.originalEvent;
+    if (orig) {
+      if (orig.touches && orig.touches.length > 0) {
+        lpX = orig.touches[0].clientX;
+        lpY = orig.touches[0].clientY;
+      } else if (orig.clientX !== undefined) {
+        lpX = orig.clientX;
+        lpY = orig.clientY;
+      }
+    }
+    clearTimeout(lpTimer);
+    lpTimer = setTimeout(() => {
+      if (lpMoved) return;
+      showRipple(lpX, lpY);
+      showContextMenu(lpLat, lpLng, lpX, lpY);
     }, 2000);
   });
-  kakao.maps.event.addListener(kakaoMap, 'mouseup', () => { pressStarted=false; clearTimeout(pressTimer); });
-  kakao.maps.event.addListener(kakaoMap, 'drag', () => { pressStarted=false; clearTimeout(pressTimer); });
+
+  kakao.maps.event.addListener(kakaoMap, 'drag', () => {
+    lpMoved = true;
+    clearTimeout(lpTimer);
+  });
+
+  kakao.maps.event.addListener(kakaoMap, 'mouseup', () => {
+    clearTimeout(lpTimer);
+  });
+
   kakao.maps.event.addListener(kakaoMap, 'click', () => hideContextMenu());
 
-  // Touch long press (mobile)
-  const mapEl = document.getElementById('kakao-map');
-  let touchLat = 0, touchLng = 0, touchX = 0, touchY = 0;
-  mapEl.addEventListener('touchstart', e => {
-    pressStarted = true;
-    const t = e.touches[0];
-    touchX = t.clientX; touchY = t.clientY;
-    const rect = mapEl.getBoundingClientRect();
-    const proj = kakaoMap.getProjection();
-    const point = new kakao.maps.Point(t.clientX - rect.left, t.clientY - rect.top);
-    const ll = proj.coordsFromContainerPoint(point);
-    touchLat = ll.getLat(); touchLng = ll.getLng();
-    pressTimer = setTimeout(() => {
-      if (!pressStarted) return;
-      showRipple(touchX, touchY);
-      showContextMenu(touchLat, touchLng, touchX, touchY);
-    }, 2000);
-  }, {passive: true});
-  mapEl.addEventListener('touchend', () => { pressStarted=false; clearTimeout(pressTimer); }, {passive: true});
-  mapEl.addEventListener('touchmove', () => { pressStarted=false; clearTimeout(pressTimer); }, {passive: true});
-
-  // 브라우저 기본 컨텍스트 메뉴(이미지 저장 등) 차단
-  mapEl.addEventListener('contextmenu', e => e.preventDefault(), {passive: false});
+  // PC 우클릭도 long press 메뉴 트리거
+  kakao.maps.event.addListener(kakaoMap, 'rightclick', e => {
+    const orig = e.originalEvent;
+    const x = orig ? orig.clientX : window.innerWidth/2;
+    const y = orig ? orig.clientY : window.innerHeight/2;
+    showRipple(x, y);
+    showContextMenu(e.latLng.getLat(), e.latLng.getLng(), x, y);
+  });
   // 지도 타일 로드 완료 후 현재 위치로 이동
   kakao.maps.event.addListener(kakaoMap, 'tilesloaded', function onTiles() {
     kakao.maps.event.removeListener(kakaoMap, 'tilesloaded', onTiles);
@@ -1002,5 +1007,3 @@ setInterval(()=>{renderCards();},60000);
 
 </body>
 </html>
-
-
