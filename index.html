@@ -14,6 +14,14 @@
     --border:rgba(255,255,255,0.08);
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  /* iOS Safari 이미지 저장 메뉴 차단 */
+  #kakao-map img {
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+    -webkit-user-drag: none !important;
+    pointer-events: none !important;
+  }
   body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);height:100dvh;overflow:hidden;display:flex;flex-direction:column;}
 
 /* HEADER */
@@ -522,6 +530,12 @@ function initMap() {
     lpActive = false;
     clearTimeout(lpTimer);
   }, {passive: true});
+
+  // 브라우저 기본 contextmenu(이미지 저장) 차단
+  mapContainer.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    return false;
+  });
 
   // PC: 우클릭으로 컨텍스트 메뉴 열기
   kakao.maps.event.addListener(kakaoMap, 'rightclick', e => {
