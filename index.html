@@ -15,8 +15,8 @@
     --header-h:56px; --bottombar-h:64px; --cards-h:160px;
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  #kakao-map img{-webkit-touch-callout:none;-webkit-user-drag:none;}  /* 이미지 저장 메뉴만 차단 */
-  body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);height:100dvh;overflow:hidden;display:flex;flex-direction:column;}
+
+body{font-family:‘Noto Sans KR’,sans-serif;background:var(–bg);color:var(–text);height:100dvh;overflow:hidden;display:flex;flex-direction:column;}
 
 /* ══════════════════════════
 HEADER — 상단 고정 영역
@@ -223,11 +223,7 @@ LOADING / LOGIN / TOAST
 .k-label{background:rgba(8,8,18,0.88);color:#e0e0f0;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;font-family:‘Noto Sans KR’,sans-serif;margin-top:2px;max-width:80px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;border:1px solid rgba(255,255,255,0.06);}
 .k-urgent{width:7px;height:7px;border-radius:50%;margin:2px auto 0;animation:pgreen 1s infinite;}
 
-/* Gesture block — map-area는 터치 자유, UI만 차단 */
-.header,.bottom-bar,.modal-overlay,.ctx-menu,.search-bar{touch-action:none;}
 .cat-bar,.cards-scroll{touch-action:pan-x;}
-.map-area{touch-action:auto;}
-#kakao-map{touch-action:auto;}
 </style>
 
 </head>
@@ -523,22 +519,6 @@ function renderMarkersFiltered(list) {
   });
 }
 
-// ── Prevent page zoom, allow map zoom only ──
-document.addEventListener('gesturestart', e => e.preventDefault());
-document.addEventListener('gesturechange', e => e.preventDefault());
-document.addEventListener('gestureend', e => e.preventDefault());
-
-// Allow pinch zoom only on kakao map container
-let lastTouchDist = 0;
-document.getElementById('kakao-map').addEventListener('touchstart', e => {
-  if (e.touches.length === 2) {
-    lastTouchDist = Math.hypot(
-      e.touches[0].clientX - e.touches[1].clientX,
-      e.touches[0].clientY - e.touches[1].clientY
-    );
-  }
-}, {passive: true});
-
 // ── Context menu functions (module scope) ──
 let pressTimer = null;
 let pressStarted = false;
@@ -636,7 +616,7 @@ function initMap() {
   mapEl.addEventListener('touchmove', () => { pressStarted=false; clearTimeout(pressTimer); }, {passive: true});
 
   // 브라우저 기본 컨텍스트 메뉴(이미지 저장 등) 차단
-  mapEl.addEventListener('contextmenu', e => e.preventDefault());
+  mapEl.addEventListener('contextmenu', e => e.preventDefault(), {passive: false});
   // 지도 타일 로드 완료 후 현재 위치로 이동
   kakao.maps.event.addListener(kakaoMap, 'tilesloaded', function onTiles() {
     kakao.maps.event.removeListener(kakaoMap, 'tilesloaded', onTiles);
@@ -1022,3 +1002,5 @@ setInterval(()=>{renderCards();},60000);
 
 </body>
 </html>
+
+
