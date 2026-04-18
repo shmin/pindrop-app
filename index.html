@@ -525,13 +525,38 @@ tryInitMap();
 
 // Auth
 const provider = new GoogleAuthProvider();
-const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+provider.setCustomParameters({ prompt: 'select_account' });
 
 async function doLogin() {
+  const btn = document.getElementById('google-login-btn');
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '<span style="color:var(--muted)">로그인 중...</span>';
+  btn.disabled = true;
+
   try {
-    if (isMobile) await signInWithRedirect(auth, provider);
-    else await signInWithPopup(auth, provider);
-  } catch(e) { toast('로그인 실패: ' + e.message, 'error'); }
+    // 1차 시도: 팝업 (PC, 일부 모바일에서 작동)
+    await signInWithPopup(auth, provider);
+  } catch(popupErr) {
+    console.log('popup failed:', popupErr.code, popupErr.message);
+    // 팝업 실패시 리다이렉트로 폴백
+    if (popupErr.code === 'auth/popup-blocked' ||
+        popupErr.code === 'auth/popup-closed-by-user' ||
+        popupErr.code === 'auth/cancelled-popup-request' ||
+        popupErr.code === 'auth/operation-not-supported-in-this-environment') {
+      try {
+        toast('리다이렉트 방식으로 전환...', 'success');
+        await signInWithRedirect(auth, provider);
+      } catch(redirectErr) {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        toast('로그인 실패: ' + redirectErr.message, 'error');
+      }
+    } else {
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+      toast('로그인 실패: ' + popupErr.message, 'error');
+    }
+  }
 }
 
 document.getElementById('google-login-btn').addEventListener('click', doLogin);
@@ -550,7 +575,14 @@ const authChip = document.getElementById('auth-chip');
 document.getElementById('loading-text').textContent = '앱 초기화 중...';
 
 // Step 2: 리다이렉트 결과 확인
-getRedirectResult(auth).catch(err => console.log('redirect:', err));
+getRedirectResult(auth).then(result => {
+  if (result && result.user) {
+    console.log('redirect login success:', result.user.email);
+  }
+}).catch(err => {
+  console.log('redirect err:', err);
+  toast('리다이렉트 오류: ' + err.message, 'error');
+});
 
 // Step 3: 인증 상태 감지
 onAuthStateChanged(auth, async user => {
