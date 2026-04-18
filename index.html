@@ -123,6 +123,20 @@
 .ctx-icon{font-size:18px;width:24px;text-align:center;flex-shrink:0;}
 .ctx-divider{height:1px;background:var(–border);margin:4px 0;}
 
+/* DRAG PIN */
+.drag-pin-preview{position:fixed;z-index:600;pointer-events:none;display:none;filter:drop-shadow(0 6px 12px rgba(0,0,0,0.6));transform:translate(-50%,-100%);}
+.drag-pin-preview.show{display:block;}
+.drag-pin-preview .drag-body{width:48px;height:60px;border-radius:50% 50% 50% 0;background:linear-gradient(135deg,#ff4d6d,#ff6b35);display:flex;align-items:center;justify-content:center;transform:rotate(-45deg);}
+.drag-pin-preview .drag-emoji{transform:rotate(45deg);font-size:24px;}
+.drag-hint-overlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(255,77,109,0.95);color:#fff;padding:10px 20px;border-radius:24px;font-size:14px;font-weight:700;z-index:100;pointer-events:none;display:none;backdrop-filter:blur(8px);box-shadow:0 4px 20px rgba(255,77,109,0.4);}
+.drag-hint-overlay.show{display:block;animation:bounce 0.3s ease;}
+@keyframes bounce{from{transform:translate(-50%,-40%);opacity:0;}to{transform:translate(-50%,-50%);opacity:1;}}
+.fab.dragging{opacity:0.3;transform:scale(0.9);}
+.map-crosshair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:50;pointer-events:none;display:none;}
+.map-crosshair.show{display:block;animation:pulseScale 1s infinite;}
+@keyframes pulseScale{0%,100%{transform:translate(-50%,-50%) scale(1);}50%{transform:translate(-50%,-50%) scale(1.1);}}
+.map-crosshair svg{width:44px;height:44px;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.6));}
+
 /* PRESS RIPPLE */
 .press-ripple{position:fixed;width:56px;height:56px;border-radius:50%;background:rgba(255,77,109,0.2);border:2px solid rgba(255,77,109,0.4);transform:translate(-50%,-50%) scale(0);pointer-events:none;z-index:350;transition:transform 0.6s,opacity 0.6s;}
 .press-ripple.animate{transform:translate(-50%,-50%) scale(1);opacity:0;}
@@ -248,7 +262,7 @@ input:focus,textarea:focus{border-color:var(–accent);}
     </div>
   </div>
 
-  <div class="map-hint" id="map-hint">🗺️ 로그인 후 길게 눌러 핀을 꽂으세요</div>
+  <div class="map-hint" id="map-hint">🗺️ 📌 버튼을 지도 위로 드래그하세요</div>
 
   <div class="info-popup" id="info-popup">
     <div class="info-top">
@@ -288,6 +302,29 @@ input:focus,textarea:focus{border-color:var(–accent);}
   </div>
 
   <div class="press-ripple" id="press-ripple"></div>
+
+  <!-- 드래그 중 표시되는 크로스헤어 -->
+
+  <div class="map-crosshair" id="map-crosshair">
+    <svg viewBox="0 0 44 44" fill="none">
+      <circle cx="22" cy="22" r="20" stroke="#ff4d6d" stroke-width="2.5" fill="rgba(255,77,109,0.15)"/>
+      <line x1="22" y1="4" x2="22" y2="14" stroke="#ff4d6d" stroke-width="2.5"/>
+      <line x1="22" y1="30" x2="22" y2="40" stroke="#ff4d6d" stroke-width="2.5"/>
+      <line x1="4" y1="22" x2="14" y2="22" stroke="#ff4d6d" stroke-width="2.5"/>
+      <line x1="30" y1="22" x2="40" y2="22" stroke="#ff4d6d" stroke-width="2.5"/>
+      <circle cx="22" cy="22" r="3" fill="#ff4d6d"/>
+    </svg>
+  </div>
+
+  <!-- 드래그 중 힌트 -->
+
+  <div class="drag-hint-overlay" id="drag-hint">📍 원하는 위치에 놓아주세요</div>
+</div>
+
+<!-- 드래그 중 따라다니는 핀 미리보기 (body 최상위) -->
+
+<div class="drag-pin-preview" id="drag-preview">
+  <div class="drag-body"><span class="drag-emoji">📌</span></div>
 </div>
 
 <div class="bottom-bar">
@@ -347,7 +384,7 @@ input:focus,textarea:focus{border-color:var(–accent);}
         <p style="font-size:12px;color:var(--muted);">카테고리 색상 배지로 표시됩니다.</p>
       </div>
     </div>
-    <p class="hint">📍 지도를 길게 눌러 위치를 먼저 선택하세요</p>
+    <p class="hint">📍 📌 버튼을 지도 위로 드래그하세요</p>
     <div class="modal-actions">
       <button class="btn-cancel" id="modal-cancel">취소</button>
       <button class="btn-submit" id="modal-submit">핀 꽂기 📌</button>
@@ -479,12 +516,9 @@ function initMap() {
   kakaoMap.setDraggable(true);
   kakaoMap.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
 
-  // ── Long press (DOM 터치 이벤트 직접 사용) ──
-  let lpTimer = null;
-  let lpStartX = 0, lpStartY = 0;
-  let lpActive = false;
-
+  // ── 이미지 저장 메뉴 차단 ──
   const mapContainer = document.getElementById('kakao-map');
+  mapContainer.addEventListener('contextmenu', e => { e.preventDefault(); return false; });
 
   function screenToLatLng(x, y) {
     const rect = mapContainer.getBoundingClientRect();
@@ -492,60 +526,6 @@ function initMap() {
     const pt = new kakao.maps.Point(x - rect.left, y - rect.top);
     return proj.coordsFromContainerPoint(pt);
   }
-
-  mapContainer.addEventListener('touchstart', e => {
-    if (e.touches.length !== 1) return; // 핀치줌일 땐 무시
-    lpActive = true;
-    const t = e.touches[0];
-    lpStartX = t.clientX;
-    lpStartY = t.clientY;
-    clearTimeout(lpTimer);
-    lpTimer = setTimeout(() => {
-      if (!lpActive) return;
-      const ll = screenToLatLng(lpStartX, lpStartY);
-      if (ll) {
-        showRipple(lpStartX, lpStartY);
-        showContextMenu(ll.getLat(), ll.getLng(), lpStartX, lpStartY);
-      }
-    }, 2000);
-  }, {passive: true});
-
-  mapContainer.addEventListener('touchmove', e => {
-    if (!lpActive) return;
-    const t = e.touches[0];
-    if (!t) return;
-    const moved = Math.hypot(t.clientX - lpStartX, t.clientY - lpStartY);
-    if (moved > 10) {
-      // 10px 이상 이동시 long press 취소
-      lpActive = false;
-      clearTimeout(lpTimer);
-    }
-  }, {passive: true});
-
-  mapContainer.addEventListener('touchend', () => {
-    lpActive = false;
-    clearTimeout(lpTimer);
-  }, {passive: true});
-
-  mapContainer.addEventListener('touchcancel', () => {
-    lpActive = false;
-    clearTimeout(lpTimer);
-  }, {passive: true});
-
-  // 브라우저 기본 contextmenu(이미지 저장) 차단
-  mapContainer.addEventListener('contextmenu', e => {
-    e.preventDefault();
-    return false;
-  });
-
-  // PC: 우클릭으로 컨텍스트 메뉴 열기
-  kakao.maps.event.addListener(kakaoMap, 'rightclick', e => {
-    const orig = e.originalEvent;
-    const x = orig ? orig.clientX : window.innerWidth/2;
-    const y = orig ? orig.clientY : window.innerHeight/2;
-    showRipple(x, y);
-    showContextMenu(e.latLng.getLat(), e.latLng.getLng(), x, y);
-  });
 
   kakao.maps.event.addListener(kakaoMap, 'click', () => hideContextMenu());
 
@@ -689,7 +669,7 @@ onAuthStateChanged(auth, async user => {
     }
 
     loadingScreen.classList.add('hidden');
-    document.getElementById('map-hint').textContent = '🗺️ 길게 눌러 핀을 꽂으세요';
+    document.getElementById('map-hint').textContent = '🗺️ 📌 버튼을 지도 위로 드래그하세요';
     toast(`${user.displayName||'사용자'}님 환영해요! 🎉`);
   } else {
     // 비로그인 → 로그인 화면만 보이기
@@ -947,10 +927,112 @@ document.getElementById('loc-btn').addEventListener('click', e => {
   moveToCurrentLocation(true);
 });
 
-// FAB
-document.getElementById('fab').addEventListener('click', () => {
-  if (!currentUser) { toast('먼저 로그인해주세요! 🔐', 'error'); return; }
-  toast('지도를 길게 눌러 핀을 꽂으세요 📌');
+// ── FAB Drag & Drop ──
+const fabBtn = document.getElementById('fab');
+const dragPreview = document.getElementById('drag-preview');
+const crosshair = document.getElementById('map-crosshair');
+const dragHint = document.getElementById('drag-hint');
+let isDragging = false;
+
+function startDrag(clientX, clientY) {
+  if (!currentUser) { toast('먼저 로그인해주세요! 🔐', 'error'); return false; }
+  if (!kakaoMap) return false;
+  isDragging = true;
+  fabBtn.classList.add('dragging');
+  dragPreview.classList.add('show');
+  dragPreview.style.left = clientX + 'px';
+  dragPreview.style.top = clientY + 'px';
+  crosshair.classList.add('show');
+  dragHint.classList.add('show');
+  setTimeout(() => dragHint.classList.remove('show'), 2000);
+  return true;
+}
+
+function moveDrag(clientX, clientY) {
+  if (!isDragging) return;
+  dragPreview.style.left = clientX + 'px';
+  dragPreview.style.top = clientY + 'px';
+}
+
+function endDrag(clientX, clientY) {
+  if (!isDragging) return;
+  isDragging = false;
+  fabBtn.classList.remove('dragging');
+  dragPreview.classList.remove('show');
+  crosshair.classList.remove('show');
+  dragHint.classList.remove('show');
+
+  // Check if drop location is on map area
+  const mapRect = mapContainer.getBoundingClientRect();
+  if (clientX < mapRect.left || clientX > mapRect.right ||
+      clientY < mapRect.top || clientY > mapRect.bottom) {
+    toast('지도 위에 놓아주세요', 'error');
+    return;
+  }
+
+  // Convert screen coords to latLng
+  const ll = screenToLatLng(clientX, clientY);
+  if (!ll) return;
+  pendingLat = ll.getLat();
+  pendingLng = ll.getLng();
+
+  // Reverse geocode and open modal
+  const gc = new kakao.maps.services.Geocoder();
+  gc.coord2Address(pendingLng, pendingLat, (res, status) => {
+    let addr = pendingLat.toFixed(5) + ', ' + pendingLng.toFixed(5);
+    if (status === kakao.maps.services.Status.OK && res[0]) {
+      addr = res[0].road_address ? res[0].road_address.address_name : res[0].address.address_name;
+    }
+    document.getElementById('f-loc').value = addr;
+    document.getElementById('loc-preview').textContent = '📍 ' + addr;
+    document.getElementById('loc-preview').classList.add('show');
+    openModal();
+  });
+}
+
+// Touch events on FAB
+fabBtn.addEventListener('touchstart', e => {
+  const t = e.touches[0];
+  if (startDrag(t.clientX, t.clientY)) e.preventDefault();
+}, {passive: false});
+
+fabBtn.addEventListener('touchmove', e => {
+  if (!isDragging) return;
+  e.preventDefault();
+  const t = e.touches[0];
+  moveDrag(t.clientX, t.clientY);
+}, {passive: false});
+
+fabBtn.addEventListener('touchend', e => {
+  if (!isDragging) return;
+  e.preventDefault();
+  const t = e.changedTouches[0];
+  endDrag(t.clientX, t.clientY);
+}, {passive: false});
+
+fabBtn.addEventListener('touchcancel', () => {
+  if (isDragging) {
+    isDragging = false;
+    fabBtn.classList.remove('dragging');
+    dragPreview.classList.remove('show');
+    crosshair.classList.remove('show');
+    dragHint.classList.remove('show');
+  }
+});
+
+// Mouse events on FAB (PC)
+fabBtn.addEventListener('mousedown', e => {
+  if (startDrag(e.clientX, e.clientY)) {
+    e.preventDefault();
+    const onMove = ev => moveDrag(ev.clientX, ev.clientY);
+    const onUp = ev => {
+      endDrag(ev.clientX, ev.clientY);
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }
 });
 
 // Modal
