@@ -470,41 +470,66 @@ function initMap() {
   kakaoMap.setDraggable(true);
   kakaoMap.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
 
-  // Long press via mousedown (works for both touch and mouse)
+  // ── Long press (DOM 터치 이벤트 직접 사용) ──
   let lpTimer = null;
-  let lpMoved = false;
-  let lpX = 0, lpY = 0, lpLat = 0, lpLng = 0;
+  let lpStartX = 0, lpStartY = 0;
+  let lpActive = false;
 
-  kakao.maps.event.addListener(kakaoMap, 'mousedown', e => {
-    lpMoved = false;
-    lpLat = e.latLng.getLat();
-    lpLng = e.latLng.getLng();
-    const orig = e.originalEvent;
-    if (orig) {
-      if (orig.touches && orig.touches[0]) {
-        lpX = orig.touches[0].clientX;
-        lpY = orig.touches[0].clientY;
-      } else {
-        lpX = orig.clientX || 0;
-        lpY = orig.clientY || 0;
-      }
-    }
+  const mapContainer = document.getElementById('kakao-map');
+
+  function screenToLatLng(x, y) {
+    const rect = mapContainer.getBoundingClientRect();
+    const proj = kakaoMap.getProjection();
+    const pt = new kakao.maps.Point(x - rect.left, y - rect.top);
+    return proj.coordsFromContainerPoint(pt);
+  }
+
+  mapContainer.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1) return; // 핀치줌일 땐 무시
+    lpActive = true;
+    const t = e.touches[0];
+    lpStartX = t.clientX;
+    lpStartY = t.clientY;
     clearTimeout(lpTimer);
     lpTimer = setTimeout(() => {
-      if (!lpMoved) {
-        showRipple(lpX, lpY);
-        showContextMenu(lpLat, lpLng, lpX, lpY);
+      if (!lpActive) return;
+      const ll = screenToLatLng(lpStartX, lpStartY);
+      if (ll) {
+        showRipple(lpStartX, lpStartY);
+        showContextMenu(ll.getLat(), ll.getLng(), lpStartX, lpStartY);
       }
     }, 2000);
-  });
+  }, {passive: true});
 
-  kakao.maps.event.addListener(kakaoMap, 'drag', () => {
-    lpMoved = true;
-    clearTimeout(lpTimer);
-  });
+  mapContainer.addEventListener('touchmove', e => {
+    if (!lpActive) return;
+    const t = e.touches[0];
+    if (!t) return;
+    const moved = Math.hypot(t.clientX - lpStartX, t.clientY - lpStartY);
+    if (moved > 10) {
+      // 10px 이상 이동시 long press 취소
+      lpActive = false;
+      clearTimeout(lpTimer);
+    }
+  }, {passive: true});
 
-  kakao.maps.event.addListener(kakaoMap, 'mouseup', () => {
+  mapContainer.addEventListener('touchend', () => {
+    lpActive = false;
     clearTimeout(lpTimer);
+  }, {passive: true});
+
+  mapContainer.addEventListener('touchcancel', () => {
+    lpActive = false;
+    clearTimeout(lpTimer);
+  }, {passive: true});
+
+  // PC: 우클릭으로 컨텍스트 메뉴 열기
+  kakao.maps.event.addListener(kakaoMap, 'rightclick', e => {
+    const orig = e.originalEvent;
+    const x = orig ? orig.clientX : window.innerWidth/2;
+    const y = orig ? orig.clientY : window.innerHeight/2;
+    showRipple(x, y);
+    showContextMenu(e.latLng.getLat(), e.latLng.getLng(), x, y);
   });
 
   kakao.maps.event.addListener(kakaoMap, 'click', () => hideContextMenu());
