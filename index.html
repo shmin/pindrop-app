@@ -13,7 +13,7 @@
     --screen: #cfd7c7;
     --screen-2: #b9c3ac;
     --wheel-edge: #b9b4a8;
-    --bar: linear-gradient(180deg, #4a77c9, #2e55a8);
+    --bar-color: #2e55a8;
     --anim-dur: 280ms;
     --anim-ease: cubic-bezier(.22,.8,.25,1);
   }
@@ -59,9 +59,12 @@ inset 0 -1px 0 rgba(255,255,255,.3),
 overflow: hidden; position: relative;
 }
 .titlebar {
-height: 26px; background: var(–bar); color: #fff;
+height: 26px;
+background: linear-gradient(180deg, #4a77c9, var(–bar-color));
+color: #fff;
 display: flex; align-items: center; justify-content: center;
 padding: 0 10px; font-size: 13px; font-weight: 700; position: relative;
+flex-shrink: 0;
 }
 .titlebar::before {
 content: “”; position: absolute; inset: 0 0 auto 0; height: 45%;
@@ -100,12 +103,15 @@ flex-shrink: 0; border: 1px solid rgba(0,0,0,.12);
 .list li .label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .list li .meta {
 color: #555; font-size: 12px; flex-shrink: 0;
-max-width: 120px; text-align: right;
+max-width: 140px; text-align: right;
 white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .list li .chev { color: #555; font-size: 14px; flex-shrink: 0; }
-.list li.active { background: var(–bar); color: #fff; }
-.list li.active .meta, .list li.active .chev { color: rgba(255,255,255,.9); }
+.list li.active {
+background: linear-gradient(180deg, #4a77c9, var(–bar-color));
+color: #fff;
+}
+.list li.active .meta, .list li.active .chev { color: rgba(255,255,255,.95); }
 .list li.active .thumb { border-color: rgba(255,255,255,.4); }
 
 .options-body { position: absolute; inset: 0; overflow: hidden; }
@@ -117,18 +123,21 @@ border-bottom: 1px solid rgba(0,0,0,.06);
 display: flex; align-items: center; justify-content: space-between;
 min-height: 44px;
 }
-.options-body li .check { font-size: 16px; color: #2e55a8; width: 22px; flex-shrink: 0; text-align: right; }
-.options-body li.active { background: var(–bar); color: #fff; }
+.options-body li .check { font-size: 16px; color: var(–bar-color); width: 22px; flex-shrink: 0; text-align: right; }
+.options-body li.active {
+background: linear-gradient(180deg, #4a77c9, var(–bar-color));
+color: #fff;
+}
 .options-body li.active .check { color: #fff; }
 
 .empty { padding: 24px 18px; font-size: 14px; color: #333; text-align: center; line-height: 1.6; }
 .empty .big { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
 .empty button, .empty label.btn {
 display: inline-block; margin: 8px 4px 0;
-background: #2e55a8; color: #fff; border: none;
+background: var(–bar-color); color: #fff; border: none;
 padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px;
 }
-.empty label.btn.ghost { background: transparent; color: #2e55a8; border: 1px solid #2e55a8; }
+.empty label.btn.ghost { background: transparent; color: var(–bar-color); border: 1px solid var(–bar-color); }
 .empty label.btn.danger { background: transparent; color: #c44; border: 1px solid #c44; font-size: 12px; }
 .empty input[type=file] { display: none; }
 
@@ -141,7 +150,7 @@ flex-direction: column; gap: 12px; padding: 20px; z-index: 100;
 .dlmodal.show { display: flex; }
 .dlmodal p { color: #fff; font-size: 13px; text-align: center; margin: 0; line-height: 1.5; }
 .dlmodal a.dlbtn {
-background: #2e55a8; color: #fff; padding: 10px 20px; border-radius: 8px;
+background: var(–bar-color); color: #fff; padding: 10px 20px; border-radius: 8px;
 text-decoration: none; font-size: 14px; font-weight: 600;
 }
 .dlmodal button {
@@ -245,7 +254,7 @@ transition: transform .08s, box-shadow .08s;
 }
 .btn-panel button:active { transform: translateY(1px); box-shadow: inset 0 2px 3px rgba(0,0,0,.15); }
 .btn-save   { background: linear-gradient(180deg, #f0eee8 0%, #dbd7ce 100%); color: #3a3a3a; }
-.btn-export { background: linear-gradient(180deg, #4a77c9 0%, #2e55a8 100%); color: #fff;
+.btn-export { background: linear-gradient(180deg, #4a77c9 0%, var(–bar-color) 100%); color: #fff;
 box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 2px 4px rgba(46,85,168,.4) !important; }
 .btn-panel .dot {
 position: absolute; top: 7px; right: 8px;
@@ -304,10 +313,16 @@ background: #ff9d5a; box-shadow: 0 0 4px rgba(255,180,80,.8);
 <div class="toast" id="toast"></div>
 
 <script>
-window.addEventListener('error', (e) => toast('에러: ' + (e.message || '').slice(0, 60)));
-window.addEventListener('unhandledrejection', (e) => toast('에러: ' + String(e.reason).slice(0, 60)));
+window.addEventListener('error', (e) => {
+  console.error(e);
+  toast('에러: ' + (e.message || '').slice(0, 60));
+});
+window.addEventListener('unhandledrejection', (e) => {
+  console.error(e);
+  toast('에러: ' + String(e.reason).slice(0, 60));
+});
 
-const LS_KEY = 'ipod-wb-v3';  // 구조가 바뀌었으니 v3
+const LS_KEY = 'ipod-wb-v3';
 const LS_FILENAME = 'ipod-filename-v3';
 let workbook = null;
 let fileName = localStorage.getItem(LS_FILENAME) || 'ipod-data.xlsx';
@@ -438,17 +453,19 @@ function showStart() {
   state.view = 'init';
   setTitle('iPod');
   const hasBackup = !!localStorage.getItem(LS_KEY);
-  const html = `
-    <div class="empty">
-      <div class="big">엑셀 파일로 시작</div>
-      <div>기존 파일을 열거나 새 파일을 만들어요.</div>
-      <label class="btn">파일 열기<input type="file" id="openFile" accept=".xlsx,.xls"/></label>
-      <button class="btn ghost" onclick="createNew()">새로 만들기</button>
-      ${hasBackup ? '<br><button class="btn danger" onclick="resetAll()">저장 데이터 삭제</button>' : ''}
-    </div>`;
+  // 백틱을 안 쓰려고 일반 문자열 조립 (이전 버그 원인)
+  let html = '<div class="empty">';
+  html += '<div class="big">엑셀 파일로 시작</div>';
+  html += '<div>기존 파일을 열거나 새 파일을 만들어요.</div>';
+  html += '<label class="btn">파일 열기<input type="file" id="openFile" accept=".xlsx,.xls"/></label>';
+  html += '<button class="btn ghost" onclick="createNew()">새로 만들기</button>';
+  if (hasBackup) html += '<br><button class="btn danger" onclick="resetAll()">저장 데이터 삭제</button>';
+  html += '</div>';
+
   const v = createView(html);
   if (currentView) transitionTo(v, 'backward');
   else setFirstView(v);
+
   setTimeout(() => {
     const inp = v.querySelector('#openFile');
     if (inp) inp.addEventListener('change', onFileOpen);
@@ -467,6 +484,7 @@ async function onFileOpen(e) {
     dirty = false;
     saveLocal();
     updateDirty();
+    toast(`${workbook.tabs.length}개 탭 로드됨`);
     goTabs();
   } catch(err) {
     console.error(err);
@@ -502,8 +520,9 @@ function resetAll() {
 }
 
 // ============================================================
-// ExcelJS로 파싱 (이미지 포함)
-// 시트 구조: A=label, B=value, C=image, D=option1, E=option2, ...
+// 파싱 — 구조 자동 감지
+// 이미지가 삽입돼 있으면: A=label, B=value, C=(이미지위치, 비워둠), D~=옵션
+// 이미지가 없으면:        A=label, B=value, C~=옵션
 // ============================================================
 async function parseWorkbook(arrayBuffer) {
   const wb = new ExcelJS.Workbook();
@@ -511,31 +530,38 @@ async function parseWorkbook(arrayBuffer) {
 
   const tabs = [];
   wb.eachSheet((sheet) => {
-    // 이미지: sheet.getImages() 는 이미지 목록 반환
-    // 각 이미지: { imageId, range: { tl, br } } — tl.nativeRow (0-index)
+    // 이미지 먼저 수집
     const imagesByRow = {};
-    const imgList = sheet.getImages() || [];
-    imgList.forEach((img) => {
-      // tl.nativeRow가 0-index. 엑셀에선 헤더가 1행이므로 데이터 행은 row 2부터
-      const rowNum = (img.range?.tl?.nativeRow ?? 0) + 1;  // 1-index로
-      const media = wb.model.media.find(m => m.index === img.imageId);
-      if (!media) return;
-      // media.buffer 또는 media.base64 가 있음 (버전에 따라)
-      const dataUrl = mediaToDataUrl(media);
-      if (dataUrl) imagesByRow[rowNum] = dataUrl;
-    });
+    let hasImages = false;
+    try {
+      const imgList = sheet.getImages() || [];
+      imgList.forEach((img) => {
+        const rowNum = (img.range?.tl?.nativeRow ?? 0) + 1;
+        const media = wb.model.media.find(m => m.index === img.imageId);
+        if (!media) return;
+        const dataUrl = mediaToDataUrl(media);
+        if (dataUrl) {
+          imagesByRow[rowNum] = dataUrl;
+          hasImages = true;
+        }
+      });
+    } catch(e) { console.warn('이미지 파싱 실패', e); }
+
+    // 구조 감지: 이미지가 있으면 C열은 이미지 자리, 옵션은 D열(4)부터
+    // 이미지가 없으면 옵션은 C열(3)부터
+    const optionStartCol = hasImages ? 4 : 3;
 
     const rows = [];
-    // 1행은 헤더 가정, 2행부터
     const lastRow = sheet.rowCount;
     for (let r = 2; r <= lastRow; r++) {
       const row = sheet.getRow(r);
       const label = cellText(row.getCell(1));
       if (!label) continue;
       const value = cellText(row.getCell(2));
-      // D(4)열부터 옵션들
       const options = [];
-      for (let c = 4; c <= row.cellCount; c++) {
+      // actualCellCount 대신 충분히 큰 범위 검사 (최대 20열까지)
+      const maxCheck = Math.max(row.cellCount || 0, 20);
+      for (let c = optionStartCol; c <= maxCheck; c++) {
         const v = cellText(row.getCell(c));
         if (v) options.push(v);
       }
@@ -555,10 +581,10 @@ function cellText(cell) {
   const v = cell?.value;
   if (v == null) return '';
   if (typeof v === 'object') {
-    // rich text, formula, etc
     if (v.richText) return v.richText.map(t => t.text).join('').trim();
     if (v.result != null) return String(v.result).trim();
     if (v.text != null) return String(v.text).trim();
+    if (v.hyperlink && v.text) return String(v.text).trim();
     return '';
   }
   return String(v).trim();
@@ -566,26 +592,21 @@ function cellText(cell) {
 
 function mediaToDataUrl(media) {
   try {
-    // 이미지 타입
     const ext = (media.extension || 'png').toLowerCase();
     const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg'
                : ext === 'png' ? 'image/png'
                : ext === 'gif' ? 'image/gif'
                : 'image/png';
-
     let base64 = '';
     if (media.buffer) {
-      // ArrayBuffer → base64
       const bytes = new Uint8Array(media.buffer);
       let binary = '';
       for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
       base64 = btoa(binary);
     } else if (media.base64) {
       base64 = media.base64;
-    } else {
-      return '';
-    }
-    return `data:${mime};base64,${base64}`;
+    } else return '';
+    return 'data:' + mime + ';base64,' + base64;
   } catch(e) {
     console.error('이미지 변환 실패', e);
     return '';
@@ -593,7 +614,7 @@ function mediaToDataUrl(media) {
 }
 
 // ============================================================
-// ExcelJS로 Export (실제 이미지 삽입)
+// Export
 // ============================================================
 async function buildAndExport() {
   if (!workbook) return;
@@ -604,44 +625,41 @@ async function buildAndExport() {
     for (const tab of workbook.tabs) {
       const ws = wb.addWorksheet(tab.title);
       const maxOpts = Math.max(0, ...tab.rows.map(r => r.options.length));
+      const anyImage = tab.rows.some(r => r.image);
 
-      // 헤더
-      const header = ['label', 'value', 'image', ...Array.from({length: maxOpts}, (_,i) => `option${i+1}`)];
+      // 헤더: 이미지가 있을 때만 C열을 image로
+      const header = ['label', 'value'];
+      if (anyImage) header.push('image');
+      for (let i = 1; i <= maxOpts; i++) header.push('option' + i);
       ws.addRow(header);
 
-      // 열 너비
-      ws.getColumn(1).width = 14;   // label
-      ws.getColumn(2).width = 14;   // value
-      ws.getColumn(3).width = 12;   // image
-      for (let c = 4; c < 4 + maxOpts; c++) ws.getColumn(c).width = 14;
+      ws.getColumn(1).width = 14;
+      ws.getColumn(2).width = 14;
+      if (anyImage) ws.getColumn(3).width = 12;
+      const optStart = anyImage ? 4 : 3;
+      for (let c = optStart; c < optStart + maxOpts; c++) ws.getColumn(c).width = 14;
 
-      // 데이터 행
       for (let i = 0; i < tab.rows.length; i++) {
         const r = tab.rows[i];
-        const rowData = [r.label, r.value, '', ...r.options];
+        const rowData = [r.label, r.value];
+        if (anyImage) rowData.push('');
+        rowData.push(...r.options);
         const row = ws.addRow(rowData);
-        row.height = 60;  // 이미지를 위한 행 높이
+        if (anyImage) row.height = 60;
 
-        // 이미지가 있으면 C열(3)에 삽입
-        if (r.image) {
+        if (anyImage && r.image) {
           const imgInfo = dataUrlToBuffer(r.image);
           if (imgInfo) {
-            const imageId = wb.addImage({
-              buffer: imgInfo.buffer,
-              extension: imgInfo.ext,
-            });
-            // 엑셀 rowIndex는 1-index, 헤더가 1행, 데이터 첫행이 2행
-            const rowIdx = i + 2;  // 1-index
-            // ExcelJS의 addImage는 "0-indexed" 좌표 사용
+            const imageId = wb.addImage({ buffer: imgInfo.buffer, extension: imgInfo.ext });
+            const rowIdx = i + 2;
             ws.addImage(imageId, {
-              tl: { col: 2, row: rowIdx - 1 },  // C열=2, row는 0-index
+              tl: { col: 2, row: rowIdx - 1 },
               ext: { width: 75, height: 75 }
             });
           }
         }
       }
 
-      // 헤더 스타일
       const headerRow = ws.getRow(1);
       headerRow.font = { bold: true };
       headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8E8E8' } };
@@ -669,7 +687,6 @@ async function buildAndExport() {
   }
 }
 
-// data:image/jpeg;base64,XXX → { buffer: Uint8Array, ext: 'jpeg' }
 function dataUrlToBuffer(dataUrl) {
   try {
     const m = dataUrl.match(/^data:image\/(\w+);base64,(.+)$/);
@@ -679,10 +696,7 @@ function dataUrlToBuffer(dataUrl) {
     const buffer = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) buffer[i] = binary.charCodeAt(i);
     return { buffer, ext };
-  } catch(e) {
-    console.error(e);
-    return null;
-  }
+  } catch(e) { return null; }
 }
 
 function fallbackDownload(blob, fname) {
@@ -691,7 +705,7 @@ function fallbackDownload(blob, fname) {
     const link = document.getElementById('dlLink');
     link.href = url; link.download = fname;
     document.getElementById('dlMsg').innerHTML =
-      `<b>${esc(fname)}</b><br>버튼을 <b>길게 눌러</b> 다운로드<br>또는 탭 후 공유 → 파일에 저장`;
+      '<b>' + esc(fname) + '</b><br>버튼을 <b>길게 눌러</b> 다운로드<br>또는 탭 후 공유 → 파일에 저장';
     document.getElementById('dlModal').classList.add('show');
   } else {
     const a = document.createElement('a');
@@ -703,7 +717,6 @@ function fallbackDownload(blob, fname) {
 }
 function closeDownload() { document.getElementById('dlModal').classList.remove('show'); }
 
-// ====== 로컬 저장 ======
 function saveLocal() {
   try { localStorage.setItem(LS_KEY, JSON.stringify(workbook)); }
   catch(e) { toast('저장 용량 초과'); }
@@ -721,25 +734,30 @@ function goTabs(initial) {
   state.rowCursor = 0;
   setTitle(fileName.replace(/\.xlsx?$/,'').slice(0,24) || 'iPod');
 
-  if (!workbook?.tabs.length) {
+  if (!workbook || !workbook.tabs.length) {
     showEmptyView('탭이 없어요.', wasDeeper ? 'backward' : 'forward');
     return;
   }
-  const html = `<div class="list"><ul>${
-    workbook.tabs.map((t,i) => `
-      <li data-idx="${i}" class="${i === state.rowCursor ? 'active' : ''}">
-        <span class="label">${esc(t.title)}</span>
-        <span class="meta">${t.rows.length}행</span>
-        <span class="chev">›</span>
-      </li>`).join('')
-  }</ul></div>`;
+
+  let html = '<div class="list"><ul>';
+  workbook.tabs.forEach((t, i) => {
+    const isActive = i === state.rowCursor;
+    html += '<li data-idx="' + i + '" class="' + (isActive ? 'active' : '') + '">';
+    html += '<span class="label">' + esc(t.title) + '</span>';
+    html += '<span class="meta">' + t.rows.length + '행</span>';
+    html += '<span class="chev">›</span>';
+    html += '</li>';
+  });
+  html += '</ul></div>';
+
   const v = createView(html);
   if (initial) setFirstView(v);
   else transitionTo(v, wasDeeper ? 'backward' : 'forward');
-  setTimeout(() => applyListCursor(), ANIM_DUR + 20);
+  setTimeout(applyListCursor, ANIM_DUR + 20);
 }
 
-function goRows(idx, direction = 'forward') {
+function goRows(idx, direction) {
+  direction = direction || 'forward';
   state.view = 'rows';
   state.currentTabIdx = idx;
   state.rowCursor = 0;
@@ -747,51 +765,66 @@ function goRows(idx, direction = 'forward') {
   setTitle(tab.title.slice(0, 24));
 
   if (!tab.rows.length) {
-    showEmptyView('행이 없어요.<br>A: 이름  B: 값  C: 이미지  D~: 옵션들', direction);
+    showEmptyView('행이 없어요.<br>A: 이름  B: 값  C: (이미지)  옵션들', direction);
     return;
   }
-  const html = `<div class="list"><ul>${
-    tab.rows.map((r,i) => {
-      const thumb = r.image
-        ? `<span class="thumb" style="background-image:url('${r.image.replace(/'/g,"\\'")}')"></span>`
-        : '';
-      return `
-        <li data-idx="${i}" class="${i === state.rowCursor ? 'active' : ''}">
-          ${thumb}
-          <span class="label">${esc(r.label)}</span>
-          <span class="meta">${esc(r.value || '—')}</span>
-          <span class="chev">›</span>
-        </li>`;
-    }).join('')
-  }</ul></div>`;
+
+  let html = '<div class="list"><ul>';
+  tab.rows.forEach((r, i) => {
+    const isActive = i === state.rowCursor;
+    html += '<li data-idx="' + i + '" class="' + (isActive ? 'active' : '') + '">';
+    if (r.image) {
+      html += '<span class="thumb" style="background-image:url(&quot;' + r.image + '&quot;)"></span>';
+    }
+    html += '<span class="label">' + esc(r.label) + '</span>';
+    html += '<span class="meta">' + esc(r.value || '—') + '</span>';
+    html += '<span class="chev">›</span>';
+    html += '</li>';
+  });
+  html += '</ul></div>';
+
   const v = createView(html);
   transitionTo(v, direction);
-  setTimeout(() => applyListCursor(), ANIM_DUR + 20);
+  setTimeout(applyListCursor, ANIM_DUR + 20);
 }
 
 function goOptions(rowIdx) {
-  const row = currentTab().rows[rowIdx];
-  if (!row.options.length) { toast('옵션이 없어요 (D열~에 추가)'); return; }
-  state.view = 'options';
+  const tab = currentTab();
+  if (!tab) { toast('탭 없음'); return; }
+  const row = tab.rows[rowIdx];
+  if (!row) { toast('행 없음'); return; }
 
+  if (!row.options || row.options.length === 0) {
+    toast('옵션이 없어요 — 엑셀에 옵션 열을 추가하세요');
+    return;
+  }
+
+  state.view = 'options';
   const cur = row.options.indexOf(row.value);
   state.optionCursor = cur >= 0 ? cur : 0;
   setTitle(row.label);
 
-  const html = `<div class="options-body"><ul>${
-    row.options.map((opt, i) => `
-      <li data-idx="${i}" class="${i === state.optionCursor ? 'active' : ''}">
-        <span>${esc(opt)}</span>
-        <span class="check">${opt === row.value ? '✓' : ''}</span>
-      </li>`).join('')
-  }</ul></div>`;
+  let html = '<div class="options-body"><ul>';
+  row.options.forEach((opt, i) => {
+    const isActive = i === state.optionCursor;
+    const isCurrent = opt === row.value;
+    html += '<li data-idx="' + i + '" class="' + (isActive ? 'active' : '') + '">';
+    html += '<span>' + esc(opt) + '</span>';
+    html += '<span class="check">' + (isCurrent ? '✓' : '') + '</span>';
+    html += '</li>';
+  });
+  html += '</ul></div>';
+
   const v = createView(html);
   transitionTo(v, 'forward');
-  setTimeout(() => applyOptionCursor(), ANIM_DUR + 20);
+  setTimeout(applyOptionCursor, ANIM_DUR + 20);
 }
 
 function selectOption() {
-  const row = currentTab().rows[state.rowCursor];
+  const tab = currentTab();
+  if (!tab) return;
+  const row = tab.rows[state.rowCursor];
+  if (!row) return;
   const chosen = row.options[state.optionCursor];
   if (chosen == null) return;
   row.value = chosen;
@@ -801,15 +834,16 @@ function selectOption() {
 }
 
 function showEmptyView(msg, direction) {
-  const html = `<div class="empty">${msg}</div>`;
-  const v = createView(html);
+  const v = createView('<div class="empty">' + msg + '</div>');
   transitionTo(v, direction);
 }
 
-function currentTab() { return workbook?.tabs[state.currentTabIdx]; }
-function currentRow() { return currentTab()?.rows[state.rowCursor]; }
+function currentTab() { return workbook ? workbook.tabs[state.currentTabIdx] : null; }
+function currentRow() {
+  const t = currentTab();
+  return t ? t.rows[state.rowCursor] : null;
+}
 
-// ====== 렌더/커서 ======
 const screenTitle = document.getElementById('screenTitle');
 const toastEl     = document.getElementById('toast');
 function setTitle(t) { screenTitle.textContent = t; }
@@ -826,7 +860,7 @@ function applyListCursor() {
   const listH = currentView.querySelector('.list').getBoundingClientRect().height;
   const visible = Math.max(1, Math.floor(listH / liH));
   const anchor = Math.min(cur, Math.max(0, lis.length - visible));
-  ul.style.transform = `translateY(${-anchor * liH}px)`;
+  ul.style.transform = 'translateY(' + (-anchor * liH) + 'px)';
 }
 
 function applyOptionCursor() {
@@ -840,11 +874,11 @@ function applyOptionCursor() {
   const bodyH = currentView.querySelector('.options-body').getBoundingClientRect().height;
   const visible = Math.max(1, Math.floor(bodyH / liH));
   const anchor = Math.min(state.optionCursor, Math.max(0, lis.length - visible));
-  ul.style.transform = `translateY(${-anchor * liH}px)`;
+  ul.style.transform = 'translateY(' + (-anchor * liH) + 'px)';
 }
 
 function esc(s) {
-  return String(s).replace(/[&<>"']/g, c =>
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
     ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
@@ -856,7 +890,6 @@ function toast(msg) {
   toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2000);
 }
 
-// ====== 커서 이동 ======
 function moveCursor(delta) {
   if (state.view === 'options') {
     const row = currentRow();
@@ -875,7 +908,6 @@ function moveCursor(delta) {
   }
 }
 
-// ====== 휠 ======
 let dragging = false, lastAngle = 0, accumAngle = 0;
 const DEG_PER_ITEM = 22;
 
@@ -923,21 +955,24 @@ wheel.addEventListener('wheel', (e) => {
 }, { passive: false });
 
 // ====== 버튼 ======
-document.getElementById('btnMenu').addEventListener('click', () => {
-  if (document.getElementById('dlModal').classList.contains('show')) return closeDownload();
-  if (state.view === 'options')   goRows(state.currentTabIdx, 'backward');
-  else if (state.view === 'rows') goTabs();
-  else if (state.view === 'tabs') showStart();
-});
-document.getElementById('centerBtn').addEventListener('click', () => {
+function handleCenter() {
   ensureAudio();
   if (state.view === 'tabs')         goRows(state.rowCursor);
   else if (state.view === 'rows')    goOptions(state.rowCursor);
   else if (state.view === 'options') selectOption();
-});
+}
+function handleMenu() {
+  if (document.getElementById('dlModal').classList.contains('show')) return closeDownload();
+  if (state.view === 'options')   goRows(state.currentTabIdx, 'backward');
+  else if (state.view === 'rows') goTabs();
+  else if (state.view === 'tabs') showStart();
+}
+
+document.getElementById('btnMenu').addEventListener('click', handleMenu);
+document.getElementById('centerBtn').addEventListener('click', handleCenter);
+document.getElementById('btnPlay').addEventListener('click', handleCenter);
 document.getElementById('btnPrev').addEventListener('click', () => { moveCursor(-1); tickFeedback(); });
 document.getElementById('btnNext').addEventListener('click', () => { moveCursor(1);  tickFeedback(); });
-document.getElementById('btnPlay').addEventListener('click', () => document.getElementById('centerBtn').click());
 document.getElementById('btnSave').addEventListener('click', () => {
   if (!workbook) return;
   saveLocal();
@@ -953,8 +988,8 @@ document.addEventListener('change', (e) => {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowDown')  { moveCursor(1);  tickFeedback(); }
   else if (e.key === 'ArrowUp') { moveCursor(-1); tickFeedback(); }
-  else if (e.key === 'Enter') document.getElementById('centerBtn').click();
-  else if (e.key === 'Escape' || e.key === 'Backspace') document.getElementById('btnMenu').click();
+  else if (e.key === 'Enter') handleCenter();
+  else if (e.key === 'Escape' || e.key === 'Backspace') handleMenu();
   else if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); document.getElementById('btnSave').click(); }
   else if ((e.ctrlKey || e.metaKey) && e.key === 'e') { e.preventDefault(); buildAndExport(); }
 });
