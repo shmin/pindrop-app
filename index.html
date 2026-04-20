@@ -1,1123 +1,659 @@
-<!DOCTYPE html>
+<!doctype html>
 
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>PinDrop</title>
-<link href="https://fonts.googleapis.com/css2?family=Gmarket+Sans:wght@300;500;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
-<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=21aa6a962aa0c145f9458ab6704219e5&libraries=services"></script>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>iPod × Local Excel</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root {
-    --accent:#ff4d6d; --accent2:#ffd166; --accent3:#06d6a0;
-    --text:#f0f0f5; --muted:#8888aa; --bg:#0a0a0f;
-    --border:rgba(255,255,255,0.08);
+    --bg: #d9d5cc;
+    --body-edge: #c9c4b8;
+    --screen: #cfd7c7;
+    --screen-2: #b9c3ac;
+    --wheel-edge: #b9b4a8;
+    --bar: linear-gradient(180deg, #4a77c9, #2e55a8);
   }
-  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  /* iOS Safari 이미지 저장 메뉴 차단 */
-  #kakao-map, #kakao-map * {
-    -webkit-touch-callout: none !important;
-    -webkit-user-select: none !important;
-    user-select: none !important;
-    -moz-user-select: none !important;
-    -ms-user-select: none !important;
-    -webkit-user-drag: none !important;
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background:
+      radial-gradient(1000px 700px at 50% 20%, #e7e3d8 0%, transparent 60%),
+      var(--bg);
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #1a1a1a;
+    display: grid; place-items: center;
+    overflow: hidden; user-select: none;
+    -webkit-tap-highlight-color: transparent;
   }
-  body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);height:100dvh;overflow:hidden;display:flex;flex-direction:column;}
+  .ipod {
+    width: min(92vmin, 360px);
+    aspect-ratio: 360 / 620;
+    background: linear-gradient(180deg, #fbf9f4 0%, #eae6dc 100%);
+    border-radius: 34px;
+    padding: 22px 22px 28px;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.9),
+      inset 0 -2px 0 rgba(0,0,0,.06),
+      0 30px 60px rgba(30,30,30,.25),
+      0 0 0 1px var(--body-edge);
+    display: flex; flex-direction: column;
+  }
+  .screen {
+    aspect-ratio: 4/3;
+    border-radius: 6px;
+    background: linear-gradient(180deg, var(--screen) 0%, var(--screen-2) 100%);
+    box-shadow:
+      inset 0 2px 6px rgba(0,0,0,.25),
+      inset 0 -1px 0 rgba(255,255,255,.3),
+      0 0 0 6px #1a1a1a, 0 0 0 7px #3a3a3a;
+    overflow: hidden; position: relative;
+  }
+  .titlebar {
+    height: 22px; background: var(--bar); color: #fff;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 8px; font-size: 12px; font-weight: 700; position: relative;
+  }
+  .titlebar::before {
+    content: ""; position: absolute; inset: 0 0 auto 0; height: 45%;
+    background: linear-gradient(180deg, rgba(255,255,255,.35), rgba(255,255,255,0));
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #ff9d5a; box-shadow: 0 0 6px rgba(255,200,120,.7);
+  }
+  .dot.clean { background: #a0e878; box-shadow: 0 0 6px rgba(160,230,120,.6); }
 
-/* HEADER */
-.header{flex-shrink:0;height:56px;display:flex;align-items:center;gap:10px;padding:0 14px;background:var(–bg);border-bottom:1px solid var(–border);}
-.logo{font-family:‘Gmarket Sans’,sans-serif;font-size:20px;font-weight:700;background:linear-gradient(135deg,var(–accent),var(–accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;flex-shrink:0;}
-.spacer{flex:1;}
-.icon-btn{width:36px;height:36px;border-radius:10px;border:1px solid var(–border);background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shrink:0;}
-.icon-btn:active{background:rgba(255,255,255,0.1);}
-.auth-chip{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:10px;border:1px solid var(–border);background:rgba(255,255,255,0.04);cursor:pointer;flex-shrink:0;}
-.auth-chip img{width:20px;height:20px;border-radius:50%;}
-.auth-chip span{font-size:12px;white-space:nowrap;}
+.list { position: absolute; top: 22px; bottom: 0; left: 0; right: 0; overflow: hidden; }
+.list ul { list-style: none; margin: 0; padding: 0; transition: transform .18s cubic-bezier(.2,.8,.2,1); }
+.list li {
+padding: 4px 8px;
+font-size: 13px; line-height: 1.2;
+border-bottom: 1px solid rgba(0,0,0,.06);
+display: flex; align-items: center; gap: 8px;
+min-height: 36px;
+}
+.list li .thumb {
+width: 28px; height: 28px; border-radius: 4px;
+background: rgba(0,0,0,.08) center/cover no-repeat;
+flex-shrink: 0;
+border: 1px solid rgba(0,0,0,.12);
+}
+.list li .label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.list li .meta { color: #555; font-size: 13px; font-variant-numeric: tabular-nums; font-weight: 600; }
+.list li .chev { color: #555; font-size: 12px; }
+.list li.active { background: var(–bar); color: #fff; }
+.list li.active .meta, .list li.active .chev { color: #fff; }
+.list li.active .thumb { border-color: rgba(255,255,255,.4); }
 
-/* CATEGORY */
-.cat-bar{flex-shrink:0;height:48px;display:flex;align-items:center;gap:7px;padding:0 14px;background:var(–bg);border-bottom:1px solid var(–border);overflow-x:auto;scrollbar-width:none;}
-.cat-bar::-webkit-scrollbar{display:none;}
-.cat-chip{flex-shrink:0;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;border:1px solid var(–border);background:rgba(255,255,255,0.03);color:var(–muted);cursor:pointer;white-space:nowrap;}
-.cat-chip.active{color:#fff;border-color:transparent;}
-.cat-chip[data-cat=“전체”].active{background:rgba(255,77,109,0.8);}
-.cat-chip[data-cat=“팝업”].active{background:#ff4d6d;}
-.cat-chip[data-cat=“세일”].active{background:#c98f00;}
-.cat-chip[data-cat=“공연”].active{background:#06d6a0;}
-.cat-chip[data-cat=“전시”].active{background:#7c6ff7;}
-.cat-chip[data-cat=“기타”].active{background:#3a9bd5;}
+.preview {
+position: absolute; inset: 22px 0 0 0;
+background: #000;
+display: none;
+align-items: center; justify-content: center;
+flex-direction: column; gap: 8px; padding: 12px;
+}
+.preview.show { display: flex; }
+.preview img { max-width: 100%; max-height: 70%; object-fit: contain; border-radius: 4px; }
+.preview .pLabel { color: #fff; font-size: 14px; font-weight: 600; text-align: center; }
+.preview .pCount { color: #ccc; font-size: 12px; font-variant-numeric: tabular-nums; }
+.preview .pHint { color: #888; font-size: 10px; }
+.preview input[type=file] { display: none; }
+.preview label.upload {
+font-size: 10px; color: #bbb; border: 1px dashed #555;
+padding: 4px 10px; border-radius: 4px; cursor: pointer;
+}
 
-/* MAP AREA */
-.map-area{flex:1;position:relative;min-height:0;border-bottom:2px solid var(–border);}
-#kakao-map{position:absolute;inset:0;width:100%;height:100%;}
+.empty { padding: 16px 14px; font-size: 12px; color: #333; text-align: center; line-height: 1.5; }
+.empty .big { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+.empty button, .empty label.btn {
+display: inline-block;
+margin: 6px 3px 0;
+background: #2e55a8; color: #fff; border: none;
+padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;
+}
+.empty label.btn.ghost { background: transparent; color: #2e55a8; border: 1px solid #2e55a8; }
+.empty input[type=file] { display: none; }
 
-.map-btns{position:absolute;right:12px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:10;}
-.map-btn{width:44px;height:44px;border-radius:12px;border:1px solid rgba(255,255,255,0.12);background:rgba(14,14,22,0.92);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;backdrop-filter:blur(12px);box-shadow:0 2px 12px rgba(0,0,0,0.4);}
-.map-btn.primary{background:linear-gradient(135deg,var(–accent),#ff6b35);border-color:transparent;box-shadow:0 4px 16px rgba(255,77,109,0.4);}
-.map-btn:active{transform:scale(0.92);}
-.map-btn svg{width:20px;height:20px;}
+.toast {
+position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%);
+background: rgba(0,0,0,.75); color: #fff; font-size: 11px;
+padding: 4px 10px; border-radius: 10px; opacity: 0; transition: opacity .2s;
+pointer-events: none; white-space: nowrap; z-index: 5;
+}
+.toast.show { opacity: 1; }
 
-.map-hint{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:rgba(10,10,15,0.88);border:1px solid var(–border);border-radius:20px;padding:6px 14px;font-size:11px;color:var(–muted);pointer-events:none;z-index:10;white-space:nowrap;}
-
-/* BOTTOM BAR */
-.bottom-bar{flex-shrink:0;background:var(–bg);border-top:1px solid var(–border);}
-.cards-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 6px;}
-.cards-title{font-size:11px;font-weight:700;color:var(–muted);letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;gap:7px;}
-.rt-dot{width:6px;height:6px;border-radius:50%;background:var(–accent3);box-shadow:0 0 5px var(–accent3);animation:pgreen 2s infinite;}
-@keyframes pgreen{0%,100%{opacity:1;}50%{opacity:0.3;}}
-.sheet-count{background:var(–accent);color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:8px;}
-.cards-scroll{display:flex;gap:10px;overflow-x:auto;padding:0 14px 12px;scrollbar-width:none;height:160px;}
-.cards-scroll::-webkit-scrollbar{display:none;}
-.ev-card{flex-shrink:0;width:200px;background:rgba(255,255,255,0.03);border:1px solid var(–border);border-radius:14px;padding:12px;cursor:pointer;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;}
-.ev-card::before{content:’’;position:absolute;left:0;top:0;bottom:0;width:3px;}
-.ev-card[data-cat=“팝업”]::before{background:#ff4d6d;}.ev-card[data-cat=“세일”]::before{background:#ffd166;}
-.ev-card[data-cat=“공연”]::before{background:#06d6a0;}.ev-card[data-cat=“전시”]::before{background:#a29bfe;}.ev-card[data-cat=“기타”]::before{background:#74b9ff;}
-.ev-card.selected{border-color:var(–accent);}
-.ev-card-top{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
-.ev-icon{font-size:24px;width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.ev-info{flex:1;min-width:0;}
-.ev-title{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;}
-.ev-loc{font-size:11px;color:var(–muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.ev-footer{display:flex;align-items:center;justify-content:space-between;}
-.ev-cat{font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;}
-.ev-cat.팝업{background:rgba(255,77,109,0.15);color:#ff4d6d;}.ev-cat.세일{background:rgba(255,209,102,0.15);color:#ffd166;}
-.ev-cat.공연{background:rgba(6,214,160,0.15);color:#06d6a0;}.ev-cat.전시{background:rgba(162,155,254,0.15);color:#a29bfe;}.ev-cat.기타{background:rgba(116,185,255,0.15);color:#74b9ff;}
-.ev-time{font-size:10px;color:var(–muted);}
-.ev-time.urgent{color:var(–accent);font-weight:700;}
-.mine-dot{position:absolute;top:9px;right:9px;width:5px;height:5px;border-radius:50%;background:var(–accent2);}
-.no-events{padding:0 4px;color:var(–muted);font-size:12px;display:flex;align-items:center;height:100%;}
-
-/* INFO POPUP */
-.info-popup{position:absolute;left:12px;right:12px;bottom:16px;z-index:20;background:rgba(14,14,22,0.97);border:1px solid var(–border);border-radius:18px;padding:14px;backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,0.6);display:none;}
-.info-popup.show{display:block;}
-.info-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;}
-.info-icon{font-size:32px;width:50px;height:50px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.info-main{flex:1;min-width:0;}
-.info-cat{font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;display:inline-block;margin-bottom:3px;}
-.info-title{font-size:14px;font-weight:700;margin-bottom:3px;}
-.info-desc{font-size:12px;color:var(–muted);line-height:1.4;}
-.info-close{background:rgba(255,255,255,0.06);border:1px solid var(–border);color:var(–muted);width:26px;height:26px;border-radius:8px;font-size:12px;cursor:pointer;flex-shrink:0;}
-.info-footer{display:flex;align-items:center;justify-content:space-between;padding-top:8px;border-top:1px solid var(–border);}
-.info-meta{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(–muted);}
-.info-del{padding:6px 14px;border-radius:8px;border:1px solid rgba(255,77,109,0.3);background:transparent;color:var(–accent);font-family:‘Noto Sans KR’,sans-serif;font-size:11px;cursor:pointer;}
-
-/* LOC LOADING */
-.loc-loading{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:15;background:rgba(14,14,22,0.94);border:1px solid var(–border);border-radius:16px;padding:16px 22px;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;opacity:0;transition:opacity 0.2s;}
-.loc-loading.show{opacity:1;}
-.loc-spin{width:28px;height:28px;border:3px solid rgba(255,255,255,0.08);border-top-color:var(–accent3);border-radius:50%;animation:spin 0.7s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg);}}
-.loc-loading-text{font-size:12px;}
-
-/* SEARCH BAR */
-.search-bar{position:fixed;top:0;left:0;right:0;z-index:300;padding:10px 14px;background:var(–bg);border-bottom:1px solid var(–border);display:flex;align-items:center;gap:10px;transform:translateY(-100%);transition:transform 0.25s;}
-.search-bar.open{transform:translateY(0);}
-.search-bar input{flex:1;background:rgba(255,255,255,0.05);border:1px solid var(–border);border-radius:10px;padding:9px 14px;color:var(–text);font-family:‘Noto Sans KR’,sans-serif;font-size:14px;outline:none;}
-.search-close{background:transparent;border:none;color:var(–muted);font-size:13px;cursor:pointer;padding:6px;}
-
-/* CONTEXT MENU */
-.ctx-menu{position:fixed;z-index:400;background:rgba(14,14,22,0.98);border:1px solid var(–border);border-radius:16px;padding:6px;min-width:180px;box-shadow:0 8px 32px rgba(0,0,0,0.6);backdrop-filter:blur(20px);display:none;}
-.ctx-menu.show{display:block;}
-.ctx-addr{padding:8px 12px 6px;font-size:10px;color:var(–muted);border-bottom:1px solid var(–border);margin-bottom:4px;}
-.ctx-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:13px;}
-.ctx-item:active{background:rgba(255,255,255,0.06);}
-.ctx-icon{font-size:18px;width:24px;text-align:center;flex-shrink:0;}
-.ctx-divider{height:1px;background:var(–border);margin:4px 0;}
-
-/* DRAG PIN */
-.drag-pin-preview{position:fixed;z-index:600;pointer-events:none;display:none;filter:drop-shadow(0 6px 12px rgba(0,0,0,0.6));transform:translate(-50%,-100%);}
-.drag-pin-preview.show{display:block;}
-.drag-pin-preview .drag-body{width:48px;height:60px;border-radius:50% 50% 50% 0;background:linear-gradient(135deg,#ff4d6d,#ff6b35);display:flex;align-items:center;justify-content:center;transform:rotate(-45deg);}
-.drag-pin-preview .drag-emoji{transform:rotate(45deg);font-size:24px;}
-.drag-hint-overlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(255,77,109,0.95);color:#fff;padding:10px 20px;border-radius:24px;font-size:14px;font-weight:700;z-index:100;pointer-events:none;display:none;backdrop-filter:blur(8px);box-shadow:0 4px 20px rgba(255,77,109,0.4);}
-.drag-hint-overlay.show{display:block;animation:bounce 0.3s ease;}
-@keyframes bounce{from{transform:translate(-50%,-40%);opacity:0;}to{transform:translate(-50%,-50%);opacity:1;}}
-.fab.dragging{opacity:0.3;transform:scale(0.9);}
-.map-crosshair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:50;pointer-events:none;display:none;}
-.map-crosshair.show{display:block;animation:pulseScale 1s infinite;}
-@keyframes pulseScale{0%,100%{transform:translate(-50%,-50%) scale(1);}50%{transform:translate(-50%,-50%) scale(1.1);}}
-.map-crosshair svg{width:44px;height:44px;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.6));}
-
-/* PRESS RIPPLE */
-.press-ripple{position:fixed;width:56px;height:56px;border-radius:50%;background:rgba(255,77,109,0.2);border:2px solid rgba(255,77,109,0.4);transform:translate(-50%,-50%) scale(0);pointer-events:none;z-index:350;transition:transform 0.6s,opacity 0.6s;}
-.press-ripple.animate{transform:translate(-50%,-50%) scale(1);opacity:0;}
-
-/* MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);z-index:500;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity 0.2s;}
-.modal-overlay.open{opacity:1;pointer-events:all;}
-.modal{background:var(–bg);border-top:1px solid var(–border);border-radius:20px 20px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));width:100%;max-height:88dvh;overflow-y:auto;transform:translateY(100%);transition:transform 0.28s cubic-bezier(0.34,1.2,0.64,1);}
-.modal-overlay.open .modal{transform:translateY(0);}
-.modal::-webkit-scrollbar{display:none;}
-.modal-handle{width:32px;height:3px;border-radius:2px;background:rgba(255,255,255,0.12);margin:0 auto 14px;}
-.modal-title{font-family:‘Gmarket Sans’,sans-serif;font-size:16px;font-weight:700;margin-bottom:14px;background:linear-gradient(135deg,var(–accent),var(–accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-.form-group{margin-bottom:10px;}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
-label{display:block;font-size:10px;font-weight:700;color:var(–muted);margin-bottom:4px;letter-spacing:0.8px;text-transform:uppercase;}
-input,textarea{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(–border);border-radius:10px;padding:9px 12px;color:var(–text);font-family:‘Noto Sans KR’,sans-serif;font-size:13px;outline:none;-webkit-appearance:none;}
-input:focus,textarea:focus{border-color:var(–accent);}
-.cat-select{display:flex;gap:5px;flex-wrap:wrap;}
-.cat-opt{padding:5px 12px;border-radius:8px;font-size:12px;border:1px solid var(–border);background:rgba(255,255,255,0.03);color:var(–muted);cursor:pointer;}
-.cat-opt.sel{border-color:var(–accent);color:var(–accent);background:rgba(255,77,109,0.1);}
-.section-title{font-size:10px;font-weight:700;color:var(–accent);letter-spacing:1px;text-transform:uppercase;margin:12px 0 8px;display:flex;align-items:center;gap:8px;}
-.section-title::after{content:’’;flex:1;height:1px;background:var(–border);}
-.section-block{background:rgba(255,255,255,0.02);border:1px solid var(–border);border-radius:12px;padding:12px;margin-bottom:10px;}
-.pin-style-tabs{display:flex;gap:6px;margin-bottom:10px;}
-.pst{flex:1;padding:8px 6px;border-radius:10px;border:1px solid var(–border);background:rgba(255,255,255,0.02);color:var(–muted);font-size:11px;cursor:pointer;text-align:center;font-family:‘Noto Sans KR’,sans-serif;}
-.pst.active{border-color:var(–accent);color:var(–text);background:rgba(255,77,109,0.08);}
-.pst-icon{font-size:18px;margin-bottom:3px;display:block;}
-.icon-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;}
-.icon-opt{width:34px;height:34px;border-radius:7px;border:1px solid var(–border);background:rgba(255,255,255,0.02);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
-.icon-opt.sel{border-color:var(–accent);background:rgba(255,77,109,0.12);}
-.loc-preview{background:rgba(6,214,160,0.08);border:1px solid rgba(6,214,160,0.2);border-radius:8px;padding:7px 10px;font-size:11px;color:var(–accent3);margin-bottom:8px;display:none;}
-.loc-preview.show{display:block;}
-.modal-actions{display:flex;gap:8px;margin-top:14px;}
-.btn-cancel{flex:1;padding:12px;border-radius:12px;border:1px solid var(–border);background:rgba(255,255,255,0.03);color:var(–muted);font-family:‘Noto Sans KR’,sans-serif;font-size:13px;cursor:pointer;}
-.btn-submit{flex:2;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,var(–accent),#ff6b35);color:#fff;font-family:‘Noto Sans KR’,sans-serif;font-size:13px;font-weight:700;cursor:pointer;}
-.btn-submit:disabled{opacity:0.5;}
-.hint{font-size:11px;color:var(–muted);margin-top:5px;}
-
-/* LOADING */
-.loading{position:fixed;inset:0;background:#0a0a0f;z-index:9900;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
-.loading.hidden{display:none;}
-.spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,0.08);border-top-color:var(–accent);border-radius:50%;animation:spin 0.8s linear infinite;}
-
-/* LOGIN */
-.login-screen{position:fixed;inset:0;background:#0a0a0f;z-index:9500;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;}
-.login-screen.hidden{display:none;}
-.login-logo{font-family:‘Gmarket Sans’,sans-serif;font-size:48px;font-weight:700;background:linear-gradient(135deg,var(–accent),var(–accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px;}
-.login-sub{font-size:14px;color:var(–muted);text-align:center;line-height:1.7;margin-bottom:40px;}
-.google-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;max-width:280px;padding:14px;border-radius:14px;border:1px solid var(–border);background:rgba(255,255,255,0.04);color:var(–text);font-family:‘Noto Sans KR’,sans-serif;font-size:14px;cursor:pointer;}
-.google-icon{width:20px;height:20px;}
-
-/* TOAST */
-.toast{position:fixed;top:110px;left:50%;transform:translateX(-50%) translateY(-8px);background:rgba(14,14,22,0.97);border:1px solid var(–border);border-radius:10px;padding:9px 18px;font-size:12px;z-index:9999;opacity:0;transition:all 0.25s;pointer-events:none;white-space:nowrap;backdrop-filter:blur(12px);}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-.toast.success{border-color:var(–accent3);color:var(–accent3);}
-.toast.error{border-color:var(–accent);color:var(–accent);}
-
-/* Kakao marker */
-.k-marker{display:flex;flex-direction:column;align-items:center;cursor:pointer;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.5));}
-.k-pin{width:40px;height:50px;border-radius:50% 50% 50% 0;display:flex;align-items:center;justify-content:center;transform:rotate(-45deg);}
-.k-emoji{transform:rotate(45deg);font-size:19px;}
-.k-badge{padding:3px 8px;border-radius:8px;font-size:10px;font-weight:700;color:#fff;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.k-label{background:rgba(8,8,18,0.88);color:#e0e0f0;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;margin-top:2px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.wheel-wrap { margin-top: auto; display: grid; place-items: center; padding-top: 18px; }
+.wheel {
+width: 82%; aspect-ratio: 1/1; border-radius: 50%;
+position: relative;
+background: radial-gradient(circle at 50% 40%, #f4f1ea 0%, #dcd8ce 70%, #c9c4b8 100%);
+box-shadow:
+inset 0 2px 4px rgba(255,255,255,.8),
+inset 0 -6px 14px rgba(0,0,0,.12),
+0 2px 6px rgba(0,0,0,.15),
+0 0 0 1px var(–wheel-edge);
+cursor: grab; touch-action: none;
+}
+.wheel.dragging { cursor: grabbing; }
+.tag {
+position: absolute; font-weight: 700; color: #4a4a4a;
+letter-spacing: .08em; cursor: pointer; font-size: 14px;
+}
+.tag.menu { top: 8%; left: 50%; transform: translateX(-50%); font-size: 11px; }
+.tag.prev { top: 50%; left: 8%;  transform: translateY(-50%); font-size: 18px; }
+.tag.next { top: 50%; right: 8%; transform: translateY(-50%); font-size: 18px; }
+.tag.play { bottom: 8%; left: 50%; transform: translateX(-50%); font-size: 11px; }
+.center-btn {
+position: absolute; top: 50%; left: 50%;
+width: 38%; height: 38%;
+transform: translate(-50%, -50%);
+border: none; border-radius: 50%;
+background: radial-gradient(circle at 50% 35%, #ffffff 0%, #e8e4da 75%);
+box-shadow:
+inset 0 1px 0 rgba(255,255,255,.9),
+inset 0 -4px 10px rgba(0,0,0,.08),
+0 1px 3px rgba(0,0,0,.15),
+0 0 0 1px var(–wheel-edge);
+cursor: pointer;
+}
+.center-btn:active { box-shadow: inset 0 2px 4px rgba(0,0,0,.12), 0 0 0 1px var(–wheel-edge); }
 </style>
 
 </head>
 <body>
 
-<div class="loading" id="loading">
-  <div style="font-family:'Gmarket Sans',sans-serif;font-size:36px;font-weight:700;background:linear-gradient(135deg,#ff4d6d,#ffd166);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:20px;">PinDrop</div>
-  <div class="spinner"></div>
-  <div class="loading-text" id="loading-text" style="font-size:13px;color:var(--muted);">앱 초기화 중...</div>
-</div>
-
-<div class="login-screen" id="login-screen">
-  <div class="login-logo">PinDrop</div>
-  <div class="login-sub">실시간 지역 이벤트 공유 지도<br>내 주변 팝업, 세일, 공연을 발견하세요 🗺️</div>
-  <button class="google-btn" id="google-login-btn">
-    <svg class="google-icon" viewBox="0 0 24 24">
-      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-    </svg>
-    Google로 로그인
-  </button>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<div class="search-bar" id="search-bar">
-  <span style="font-size:17px;">🔍</span>
-  <input type="text" placeholder="이벤트 이름, 지역 검색..." id="search-input" autocomplete="off"/>
-  <button class="search-close" id="search-close">닫기</button>
-</div>
-
-<div class="header">
-  <div class="logo">PinDrop</div>
-  <div class="spacer"></div>
-  <div class="icon-btn" id="search-icon-btn">🔍</div>
-  <div class="auth-chip" id="auth-chip"><span>로그인</span></div>
-</div>
-
-<div class="cat-bar" id="cat-chips">
-  <div class="cat-chip active" data-cat="전체">🗺️ 전체</div>
-  <div class="cat-chip" data-cat="팝업">🎪 팝업</div>
-  <div class="cat-chip" data-cat="세일">🛍️ 세일</div>
-  <div class="cat-chip" data-cat="공연">🎵 공연</div>
-  <div class="cat-chip" data-cat="전시">🎨 전시</div>
-  <div class="cat-chip" data-cat="기타">✨ 기타</div>
-</div>
-
-<div class="map-area">
-  <div id="kakao-map"></div>
-
-  <div class="map-btns">
-    <div class="map-btn primary" id="fab">📌</div>
-    <div class="map-btn" id="loc-btn">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
-        <circle cx="12" cy="12" r="8" stroke-opacity="0.3"/>
-      </svg>
+<div class="ipod">
+  <div class="screen">
+    <div class="titlebar">
+      <span id="screenTitle">iPod</span>
+      <span class="dot clean" id="dirtyDot" title="저장 상태"></span>
+    </div>
+    <div class="list" id="list">
+      <ul id="listUl"></ul>
+      <div class="empty" id="emptyView" style="display:none;"></div>
+      <div class="preview" id="previewView">
+        <img id="previewImg" alt="" />
+        <div class="pLabel" id="previewLabel"></div>
+        <div class="pCount" id="previewCount"></div>
+        <label class="upload">
+          이미지 교체
+          <input type="file" id="imgPicker" accept="image/*" />
+        </label>
+      </div>
+      <div class="toast" id="toast"></div>
     </div>
   </div>
 
-  <div class="map-hint" id="map-hint">🗺️ 📌 버튼을 지도 위로 드래그하세요</div>
-
-  <div class="info-popup" id="info-popup">
-    <div class="info-top">
-      <div class="info-icon" id="info-icon"></div>
-      <div class="info-main">
-        <div class="info-cat" id="info-cat"></div>
-        <div class="info-title" id="info-title"></div>
-        <div class="info-desc" id="info-desc"></div>
-      </div>
-      <button class="info-close" id="info-close">✕</button>
-    </div>
-    <div class="info-footer">
-      <div class="info-meta" id="info-meta"></div>
-      <button class="info-del" id="info-del" style="display:none">🗑 삭제</button>
-    </div>
-  </div>
-
-  <div class="loc-loading" id="loc-loading">
-    <div class="loc-spin"></div>
-    <div class="loc-loading-text">현재 위치 탐색 중...</div>
-  </div>
-
-  <div class="ctx-menu" id="ctx-menu">
-    <div class="ctx-addr" id="ctx-addr">📍 주소 불러오는 중...</div>
-    <div class="ctx-item" id="ctx-add-pin">
-      <span class="ctx-icon">📌</span>
-      <div>
-        <div style="font-weight:600;">이벤트 핀 꽂기</div>
-        <div style="font-size:11px;color:var(--muted);">이 위치에 이벤트 등록</div>
-      </div>
-    </div>
-    <div class="ctx-divider"></div>
-    <div class="ctx-item" id="ctx-cancel">
-      <span class="ctx-icon" style="color:var(--muted);">✕</span>
-      <span style="color:var(--muted);">취소</span>
-    </div>
-  </div>
-
-  <div class="press-ripple" id="press-ripple"></div>
-
-  <!-- 드래그 중 표시되는 크로스헤어 -->
-
-  <div class="map-crosshair" id="map-crosshair">
-    <svg viewBox="0 0 44 44" fill="none">
-      <circle cx="22" cy="22" r="20" stroke="#ff4d6d" stroke-width="2.5" fill="rgba(255,77,109,0.15)"/>
-      <line x1="22" y1="4" x2="22" y2="14" stroke="#ff4d6d" stroke-width="2.5"/>
-      <line x1="22" y1="30" x2="22" y2="40" stroke="#ff4d6d" stroke-width="2.5"/>
-      <line x1="4" y1="22" x2="14" y2="22" stroke="#ff4d6d" stroke-width="2.5"/>
-      <line x1="30" y1="22" x2="40" y2="22" stroke="#ff4d6d" stroke-width="2.5"/>
-      <circle cx="22" cy="22" r="3" fill="#ff4d6d"/>
-    </svg>
-  </div>
-
-  <!-- 드래그 중 힌트 -->
-
-  <div class="drag-hint-overlay" id="drag-hint">📍 원하는 위치에 놓아주세요</div>
-</div>
-
-<!-- 드래그 중 따라다니는 핀 미리보기 (body 최상위) -->
-
-<div class="drag-pin-preview" id="drag-preview">
-  <div class="drag-body"><span class="drag-emoji">📌</span></div>
-</div>
-
-<div class="bottom-bar">
-  <div class="cards-header">
-    <div class="cards-title"><div class="rt-dot"></div>실시간 이벤트</div>
-    <div class="sheet-count" id="sheet-count">0</div>
-  </div>
-  <div class="cards-scroll" id="cards-scroll"></div>
-</div>
-
-<div class="modal-overlay" id="modal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">📌 새 이벤트 핀 등록</div>
-    <div class="loc-preview" id="loc-preview"></div>
-    <div class="form-group">
-      <label>이벤트 이름</label>
-      <input type="text" id="f-title" placeholder="예: 무신사 팝업스토어"/>
-    </div>
-    <div class="form-row">
-      <div>
-        <label>카테고리</label>
-        <div class="cat-select" id="cat-select">
-          <div class="cat-opt sel" data-v="팝업">팝업</div>
-          <div class="cat-opt" data-v="세일">세일</div>
-          <div class="cat-opt" data-v="공연">공연</div>
-          <div class="cat-opt" data-v="전시">전시</div>
-          <div class="cat-opt" data-v="기타">기타</div>
-        </div>
-      </div>
-      <div>
-        <label>유효 기간 종료</label>
-        <input type="datetime-local" id="f-expiry"/>
-      </div>
-    </div>
-    <div class="form-row">
-      <div>
-        <label>주소</label>
-        <input type="text" id="f-loc" placeholder="자동 입력됨"/>
-      </div>
-      <div>
-        <label>설명</label>
-        <input type="text" id="f-desc" placeholder="간단한 설명"/>
-      </div>
-    </div>
-    <div class="section-title">핀 꾸미기</div>
-    <div class="section-block">
-      <div class="pin-style-tabs" id="pin-style-tabs">
-        <div class="pst active" data-style="icon"><span class="pst-icon">😊</span>이모지</div>
-        <div class="pst" data-style="text-only"><span class="pst-icon">🔤</span>텍스트</div>
-      </div>
-      <div id="panel-icon">
-        <label>아이콘 선택</label>
-        <div class="icon-grid" id="icon-grid"></div>
-      </div>
-      <div id="panel-text-only" style="display:none;">
-        <p style="font-size:12px;color:var(--muted);">카테고리 색상 배지로 표시됩니다.</p>
-      </div>
-    </div>
-    <p class="hint">📍 📌 버튼을 지도 위로 드래그하세요</p>
-    <div class="modal-actions">
-      <button class="btn-cancel" id="modal-cancel">취소</button>
-      <button class="btn-submit" id="modal-submit">핀 꽂기 📌</button>
+  <div class="wheel-wrap">
+    <div class="wheel" id="wheel">
+      <span class="tag menu" id="btnMenu">MENU</span>
+      <span class="tag prev" id="btnPrev">−</span>
+      <span class="tag next" id="btnNext">+</span>
+      <span class="tag play" id="btnPlay">EXPORT</span>
+      <button class="center-btn" id="centerBtn" aria-label="Select"></button>
     </div>
   </div>
 </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged }
-  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp }
-  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+<script>
+// =============================================================
+// 데이터 모델
+// workbook = {
+//   tabs: [{ title, rows: [{label, count, image}] }]
+// }
+// image: base64 data URL 또는 '' 
+// =============================================================
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCTMAi2EZSx1fhY794NyKS3XtlCfOsLnn0",
-  authDomain: "pindrop-app-fcb28.firebaseapp.com",
-  projectId: "pindrop-app-fcb28",
-  storageBucket: "pindrop-app-fcb28.firebasestorage.app",
-  messagingSenderId: "421838566039",
-  appId: "1:421838566039:web:d053d9ae72fb29e16dafd2"
+const LS_KEY = 'ipod-wb-v1';
+const LS_FILENAME = 'ipod-filename-v1';
+let workbook = null;
+let fileName = localStorage.getItem(LS_FILENAME) || 'ipod-data.xlsx';
+let dirty = false;
+
+// =============================================================
+// 상태 / 뷰
+// =============================================================
+const state = {
+  view: 'init',   // 'init' | 'tabs' | 'rows'
+  currentTabIdx: -1,
+  cursor: 0,
+  preview: false,
 };
-const fbApp = initializeApp(firebaseConfig);
-const auth = getAuth(fbApp);
-const db = getFirestore(fbApp);
 
-const CAT_COLORS = {'팝업':'#ff4d6d','세일':'#ffd166','공연':'#06d6a0','전시':'#a29bfe','기타':'#74b9ff'};
-const ICONS = ['🎉','🛍️','🎵','🎨','🍔','🍰','☕','🌸','💄','👗','🎭','📸','🏪','🎤','🎪','🌟','🔥','💥','🎯','🎲','🏋️','🌈','🎀','🦋','🍺','🍜','🎸','🎹','🎬','🌙','✨','🏆'];
-
-let events = [];
-let currentUser = null;
-let activeFilter = '전체';
-let pendingLat = null, pendingLng = null;
-let openInfoId = null;
-let selectedPinStyle = 'icon';
-let selectedIcon = '🎉';
-let selectedCat = '팝업';
-let kakaoMap = null;
-let markers = {};
-
-// Toast
-function toast(msg, type='success') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = `toast ${type} show`;
-  setTimeout(() => t.classList.remove('show'), 3000);
-}
-
-// Context menu
-function showRipple(x, y) {
-  const r = document.getElementById('press-ripple');
-  r.style.left = x + 'px';
-  r.style.top = y + 'px';
-  r.classList.remove('animate');
-  requestAnimationFrame(() => r.classList.add('animate'));
-}
-
-function showContextMenu(lat, lng, x, y) {
-  if (!currentUser) { toast('먼저 로그인해주세요! 🔐', 'error'); return; }
-  closeInfo();
-  pendingLat = lat;
-  pendingLng = lng;
-  document.getElementById('ctx-addr').textContent = '📍 주소 불러오는 중...';
-
-  const gc = new kakao.maps.services.Geocoder();
-  gc.coord2Address(lng, lat, (res, status) => {
-    let addr = lat.toFixed(5) + ', ' + lng.toFixed(5);
-    if (status === kakao.maps.services.Status.OK && res[0]) {
-      addr = res[0].road_address ? res[0].road_address.address_name : res[0].address.address_name;
-    }
-    document.getElementById('ctx-addr').textContent = '📍 ' + addr;
-    document.getElementById('f-loc').value = addr;
-    document.getElementById('loc-preview').textContent = '📍 ' + addr;
-    document.getElementById('loc-preview').classList.add('show');
-  });
-
-  const menu = document.getElementById('ctx-menu');
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  let mx = x, my = y;
-  if (mx + 200 > vw - 10) mx = vw - 210;
-  if (my + 160 > vh - 10) my = y - 170;
-  if (my < 80) my = 80;
-  menu.style.left = mx + 'px';
-  menu.style.top = my + 'px';
-  menu.classList.add('show');
-}
-
-function hideContextMenu() {
-  document.getElementById('ctx-menu').classList.remove('show');
-}
-
-// Geolocation
-function moveToCurrentLocation(showToastFlag) {
-  if (!kakaoMap) return;
-  if (!navigator.geolocation) {
-    if (showToastFlag) toast('위치 정보 미지원', 'error');
-    return;
+// =============================================================
+// 시작
+// =============================================================
+function start() {
+  const saved = localStorage.getItem(LS_KEY);
+  if (saved) {
+    try {
+      workbook = JSON.parse(saved);
+      dirty = true;  // 복원된 상태는 아직 파일에 반영 안 된 것
+      updateDirty();
+      goTabs();
+      return;
+    } catch (e) {}
   }
-  const loader = document.getElementById('loc-loading');
-  loader.classList.add('show');
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      loader.classList.remove('show');
-      const ll = new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
-      kakaoMap.setCenter(ll);
-      kakaoMap.setLevel(4);
-      if (showToastFlag) toast('현재 위치로 이동했어요 📍');
-    },
-    err => {
-      loader.classList.remove('show');
-      if (showToastFlag) toast('위치 권한을 허용해주세요', 'error');
-    },
-    { enableHighAccuracy: true, timeout: 10000 }
-  );
+  showStart();
 }
 
-// Kakao Map Init
-function initMap() {
-  kakaoMap = new kakao.maps.Map(document.getElementById('kakao-map'), {
-    center: new kakao.maps.LatLng(37.5665, 126.9780),
-    level: 7,
-    scrollwheel: true,
-    draggable: true,
-    disableDoubleClickZoom: false
-  });
-  // 모바일 핀치줌 부드럽게
-  kakaoMap.setZoomable(true);
-  kakaoMap.setDraggable(true);
-  kakaoMap.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
-
-  // ── 이미지 저장 메뉴 차단 ──
-  const mapContainer = document.getElementById('kakao-map');
-  mapContainer.addEventListener('contextmenu', e => { e.preventDefault(); return false; });
-
-  function screenToLatLng(x, y) {
-    const rect = mapContainer.getBoundingClientRect();
-    const proj = kakaoMap.getProjection();
-    const pt = new kakao.maps.Point(x - rect.left, y - rect.top);
-    return proj.coordsFromContainerPoint(pt);
-  }
-
-  kakao.maps.event.addListener(kakaoMap, 'click', () => hideContextMenu());
-
-  // Tilesloaded - move to current location once
-  kakao.maps.event.addListener(kakaoMap, 'tilesloaded', function onTiles() {
-    kakao.maps.event.removeListener(kakaoMap, 'tilesloaded', onTiles);
-    moveToCurrentLocation(false);
-  });
-
-  // ── 실시간 핀치줌 ──
-  const mapEl = document.getElementById('kakao-map');
-  let pinchStartDist = 0;
-  let pinchStartLevel = 7;
-  let isPinching = false;
-
-  mapEl.addEventListener('touchstart', e => {
-    if (e.touches.length === 2) {
-      isPinching = true;
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      pinchStartDist = Math.hypot(dx, dy);
-      pinchStartLevel = kakaoMap.getLevel();
-    }
-  }, {passive: true});
-
-  mapEl.addEventListener('touchmove', e => {
-    if (isPinching && e.touches.length === 2) {
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      const dist = Math.hypot(dx, dy);
-      const ratio = dist / pinchStartDist;
-      // 비율에 따라 레벨 조정 (카카오맵 level은 숫자 작을수록 확대)
-      let newLevel = pinchStartLevel;
-      if (ratio > 1.4) newLevel = pinchStartLevel - 1;
-      else if (ratio > 2.0) newLevel = pinchStartLevel - 2;
-      else if (ratio < 0.7) newLevel = pinchStartLevel + 1;
-      else if (ratio < 0.5) newLevel = pinchStartLevel + 2;
-
-      if (newLevel !== kakaoMap.getLevel() && newLevel >= 1 && newLevel <= 14) {
-        kakaoMap.setLevel(newLevel, {animate: false});
-      }
-    }
-  }, {passive: true});
-
-  mapEl.addEventListener('touchend', e => {
-    if (e.touches.length < 2) isPinching = false;
-  }, {passive: true});
+function showStart() {
+  state.view = 'init';
+  setTitle('iPod');
+  renderEmpty(`
+    <div class="big">엑셀 파일로 시작</div>
+    <div>기존 파일을 열거나 새 파일을 만들 수 있어요.</div>
+    <label class="btn">
+      파일 열기
+      <input type="file" id="openFile" accept=".xlsx,.xls" />
+    </label>
+    <label class="btn ghost" id="newFileBtn" onclick="createNew()">새로 만들기</label>
+  `);
+  const input = document.getElementById('openFile');
+  input.addEventListener('change', onFileOpen);
 }
 
-// Wait for kakao SDK
-let kakaoRetry = 0;
-function tryInitMap() {
-  if (typeof kakao !== 'undefined' && kakao.maps) {
-    kakao.maps.load(initMap);
-  } else if (kakaoRetry++ < 40) {
-    setTimeout(tryInitMap, 300);
-  } else {
-    toast('카카오맵 로드 실패', 'error');
-  }
-}
-tryInitMap();
-
-// Auth
-const provider = new GoogleAuthProvider();
-provider.setCustomParameters({ prompt: 'select_account' });
-
-async function doLogin() {
-  const btn = document.getElementById('google-login-btn');
-  const originalText = btn.innerHTML;
-  btn.innerHTML = '<span style="color:var(--muted)">로그인 중...</span>';
-  btn.disabled = true;
-
+async function onFileOpen(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  fileName = file.name;
+  localStorage.setItem(LS_FILENAME, fileName);
   try {
-    // 1차 시도: 팝업 (PC, 일부 모바일에서 작동)
-    await signInWithPopup(auth, provider);
-  } catch(popupErr) {
-    console.log('popup failed:', popupErr.code, popupErr.message);
-    // 팝업 실패시 리다이렉트로 폴백
-    if (popupErr.code === 'auth/popup-blocked' ||
-        popupErr.code === 'auth/popup-closed-by-user' ||
-        popupErr.code === 'auth/cancelled-popup-request' ||
-        popupErr.code === 'auth/operation-not-supported-in-this-environment') {
-      try {
-        toast('리다이렉트 방식으로 전환...', 'success');
-        await signInWithRedirect(auth, provider);
-      } catch(redirectErr) {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        toast('로그인 실패: ' + redirectErr.message, 'error');
-      }
-    } else {
-      btn.innerHTML = originalText;
-      btn.disabled = false;
-      toast('로그인 실패: ' + popupErr.message, 'error');
+    const ab = await file.arrayBuffer();
+    workbook = parseWorkbook(ab);
+    dirty = false;
+    saveLocal();
+    updateDirty();
+    goTabs();
+  } catch (err) {
+    toast('파일 읽기 실패: ' + err.message);
+  }
+}
+
+function createNew() {
+  workbook = {
+    tabs: [
+      { title: 'Sheet1', rows: [
+        { label: '첫 항목', count: 0, image: '' }
+      ]}
+    ]
+  };
+  fileName = 'ipod-data.xlsx';
+  localStorage.setItem(LS_FILENAME, fileName);
+  dirty = true;
+  saveLocal();
+  updateDirty();
+  goTabs();
+}
+
+// =============================================================
+// 엑셀 파싱: 메인 시트들 + '_images' 시트
+// =============================================================
+function parseWorkbook(arrayBuffer) {
+  const wb = XLSX.read(arrayBuffer, { type: 'array' });
+  const tabs = [];
+  const imageMap = {};  // { "tabName::label": base64 }
+
+  // _images 시트가 있으면 먼저 파싱
+  if (wb.SheetNames.includes('_images')) {
+    const imgSheet = wb.Sheets['_images'];
+    const imgRows = XLSX.utils.sheet_to_json(imgSheet, { header: 1 });
+    // 1행: 헤더, 2행부터: [tabName, label, dataUrl]
+    for (let i = 1; i < imgRows.length; i++) {
+      const [t, l, d] = imgRows[i] || [];
+      if (t && l && d) imageMap[`${t}::${l}`] = d;
     }
   }
-}
 
-document.getElementById('google-login-btn').addEventListener('click', doLogin);
-document.getElementById('auth-chip').addEventListener('click', async () => {
-  if (currentUser) {
-    if (confirm('로그아웃 하시겠어요?')) await signOut(auth);
-  } else doLogin();
-});
-
-// ── App flow ──
-const loginScreen = document.getElementById('login-screen');
-const loadingScreen = document.getElementById('loading');
-const authChip = document.getElementById('auth-chip');
-
-// Step 1: 초기 로딩
-document.getElementById('loading-text').textContent = '앱 초기화 중...';
-
-// Step 2: 리다이렉트 결과 확인
-getRedirectResult(auth).then(result => {
-  if (result && result.user) {
-    console.log('redirect login success:', result.user.email);
-  }
-}).catch(err => {
-  console.log('redirect err:', err);
-  toast('리다이렉트 오류: ' + err.message, 'error');
-});
-
-// Step 3: 인증 상태 감지
-onAuthStateChanged(auth, async user => {
-  currentUser = user;
-  console.log('Auth state changed:', user ? user.email : 'not logged in');
-
-  if (user) {
-    // 로그인됨 → 지도 로딩 후 메인
-    authChip.innerHTML = `<img src="${user.photoURL||''}" onerror="this.style.display='none'"/><span>${(user.displayName||'').split(' ')[0]}</span>`;
-    loginScreen.style.display = 'none';
-    loadingScreen.classList.remove('hidden');
-    document.getElementById('loading-text').textContent = '지도 불러오는 중...';
-
-    // 지도 대기
-    let waitCount = 0;
-    while (!kakaoMap && waitCount < 40) {
-      await new Promise(r => setTimeout(r, 200));
-      waitCount++;
-    }
-
-    loadingScreen.classList.add('hidden');
-    document.getElementById('map-hint').textContent = '🗺️ 📌 버튼을 지도 위로 드래그하세요';
-    toast(`${user.displayName||'사용자'}님 환영해요! 🎉`);
-  } else {
-    // 비로그인 → 로그인 화면만 보이기
-    authChip.innerHTML = '<span>로그인</span>';
-    loadingScreen.classList.add('hidden');
-    loginScreen.style.display = 'flex';
-  }
-});
-
-// Firestore
-const q = query(collection(db, 'events'), orderBy('createdAt', 'desc'));
-onSnapshot(q, snap => {
-  const now = Date.now();
-  events = snap.docs.map(d => ({id: d.id, ...d.data()})).filter(ev => {
-    const t = ev.expiry?.toDate ? ev.expiry.toDate().getTime() : new Date(ev.expiry).getTime();
-    return t > now;
-  });
-  renderMarkers();
-  renderCards();
-}, err => toast('DB 오류: ' + err.message, 'error'));
-
-// Helpers
-function timeLeft(expiry) {
-  const t = expiry?.toDate ? expiry.toDate() : new Date(expiry);
-  const diff = t - Date.now();
-  if (diff <= 0) return {text: '만료됨', urgent: true, expired: true};
-  const h = Math.floor(diff/36e5), d = Math.floor(h/24);
-  if (d > 0) return {text: `${d}일 ${h%24}시간`, urgent: d<=1, expired: false};
-  return {text: `${h}시간 남음`, urgent: true, expired: false};
-}
-
-function filtered() {
-  return events.filter(e => activeFilter === '전체' || e.cat === activeFilter);
-}
-
-// Markers
-function makeMarkerElement(ev) {
-  const color = CAT_COLORS[ev.cat] || '#aaa';
-  const label = (ev.label || ev.title || '').slice(0, 10);
-  const div = document.createElement('div');
-  div.className = 'k-marker';
-  if (ev.pinStyle === 'text-only') {
-    div.innerHTML = `<div class="k-badge" style="background:${color}">${label}</div>`;
-  } else {
-    div.innerHTML = `
-      <div class="k-pin" style="background:${color}">
-        <span class="k-emoji">${ev.icon||'📍'}</span>
-      </div>
-      <div class="k-label">${label}</div>`;
-  }
-  div.addEventListener('click', e => {
-    e.stopPropagation();
-    showInfo(ev.id);
-  });
-  return div;
-}
-
-function renderMarkers() {
-  if (!kakaoMap) return;
-  const vis = filtered();
-  const visIds = new Set(vis.map(e => e.id));
-  Object.keys(markers).forEach(id => {
-    if (!visIds.has(id)) {
-      markers[id].setMap(null);
-      delete markers[id];
-    }
-  });
-  vis.forEach(ev => {
-    if (!ev.lat || !ev.lng) return;
-    if (markers[ev.id]) return;
-    const overlay = new kakao.maps.CustomOverlay({
-      position: new kakao.maps.LatLng(ev.lat, ev.lng),
-      content: makeMarkerElement(ev),
-      yAnchor: 1,
-      zIndex: 3
+  wb.SheetNames.forEach(name => {
+    if (name === '_images') return;
+    const sheet = wb.Sheets[name];
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+    // 1행 헤더 스킵
+    const data = rows.slice(1)
+      .map(r => ({
+        label: String(r?.[0] ?? '').trim(),
+        count: Number.isFinite(+r?.[1]) ? +r[1] : 0,
+      }))
+      .filter(r => r.label !== '');
+    data.forEach(r => {
+      r.image = imageMap[`${name}::${r.label}`] || '';
     });
-    overlay.setMap(kakaoMap);
-    markers[ev.id] = overlay;
+    tabs.push({ title: name, rows: data });
   });
+
+  if (!tabs.length) tabs.push({ title: 'Sheet1', rows: [] });
+  return { tabs };
 }
 
-// Info popup
-function showInfo(id) {
-  const ev = events.find(e => e.id === id);
-  if (!ev) return;
-  openInfoId = id;
-  const color = CAT_COLORS[ev.cat] || '#aaa';
-  const tl = timeLeft(ev.expiry);
-  document.getElementById('info-icon').textContent = ev.icon || '📍';
-  document.getElementById('info-icon').style.background = color + '22';
-  const catEl = document.getElementById('info-cat');
-  catEl.textContent = ev.cat;
-  catEl.style.background = color + '22';
-  catEl.style.color = color;
-  document.getElementById('info-title').textContent = ev.title;
-  document.getElementById('info-desc').textContent = ev.desc || '';
-  document.getElementById('info-meta').innerHTML = `
-    <span>⏰ <span style="color:${tl.urgent?'#ff4d6d':color}">${tl.text}</span></span>
-    <span>📍 ${ev.loc || ''}</span>
-    <span>👤 ${ev.authorName || '익명'}</span>`;
-  const delBtn = document.getElementById('info-del');
-  if (currentUser && ev.authorUid === currentUser.uid) {
-    delBtn.style.display = 'block';
-    delBtn.onclick = () => deletePin(ev);
-  } else delBtn.style.display = 'none';
-  document.getElementById('info-popup').classList.add('show');
-  if (ev.lat && ev.lng) kakaoMap.panTo(new kakao.maps.LatLng(ev.lat, ev.lng));
-  renderCards();
+// =============================================================
+// 엑셀 저장 (Export) — 이미지는 '_images' 시트에 base64로
+// =============================================================
+function exportWorkbook() {
+  if (!workbook) return;
+  const wb = XLSX.utils.book_new();
+
+  // 메인 시트들: label, count
+  workbook.tabs.forEach(tab => {
+    const aoa = [['label', 'count'],
+      ...tab.rows.map(r => [r.label, r.count])];
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    XLSX.utils.book_append_sheet(wb, ws, tab.title);
+  });
+
+  // 이미지 시트
+  const imgAoa = [['tab', 'label', 'dataUrl']];
+  workbook.tabs.forEach(tab => {
+    tab.rows.forEach(r => {
+      if (r.image) imgAoa.push([tab.title, r.label, r.image]);
+    });
+  });
+  const imgWs = XLSX.utils.aoa_to_sheet(imgAoa);
+  // _images 탭 숨기기
+  imgWs['!hidden'] = true;
+  XLSX.utils.book_append_sheet(wb, imgWs, '_images');
+  // 숨김 속성
+  if (wb.Workbook == null) wb.Workbook = { Sheets: [] };
+  wb.Workbook.Sheets = wb.SheetNames.map(n => ({
+    name: n,
+    Hidden: n === '_images' ? 1 : 0
+  }));
+
+  XLSX.writeFile(wb, fileName || 'ipod-data.xlsx');
+  dirty = false;
+  updateDirty();
+  toast('Exported: ' + fileName);
 }
 
-function closeInfo() {
-  openInfoId = null;
-  document.getElementById('info-popup').classList.remove('show');
-  renderCards();
-}
-
-document.getElementById('info-close').addEventListener('click', closeInfo);
-
-async function deletePin(ev) {
-  if (!confirm(`"${ev.title}" 핀을 삭제할까요?`)) return;
+// =============================================================
+// 로컬 자동 저장
+// =============================================================
+function saveLocal() {
   try {
-    await deleteDoc(doc(db, 'events', ev.id));
-    if (markers[ev.id]) { markers[ev.id].setMap(null); delete markers[ev.id]; }
-    closeInfo();
-    toast('핀이 삭제됐어요 🗑');
-  } catch(e) { toast('삭제 실패: ' + e.message, 'error'); }
-}
-
-// Cards
-function renderCards() {
-  const scroll = document.getElementById('cards-scroll');
-  const vis = filtered();
-  document.getElementById('sheet-count').textContent = vis.length;
-  if (!vis.length) {
-    scroll.innerHTML = '<div class="no-events">이 카테고리에 이벤트가 없어요</div>';
-    return;
+    localStorage.setItem(LS_KEY, JSON.stringify(workbook));
+  } catch (e) {
+    // 용량 초과 시 (이미지 많으면 5MB 한계)
+    toast('브라우저 저장 용량 초과');
   }
-  scroll.innerHTML = '';
-  [...vis].sort((a,b) => {
-    const ta = a.expiry?.toDate ? a.expiry.toDate() : new Date(a.expiry);
-    const tb = b.expiry?.toDate ? b.expiry.toDate() : new Date(b.expiry);
-    return ta - tb;
-  }).forEach(ev => {
-    const tl = timeLeft(ev.expiry);
-    const isMe = currentUser && ev.authorUid === currentUser.uid;
-    const color = CAT_COLORS[ev.cat] || '#aaa';
-    const card = document.createElement('div');
-    card.className = 'ev-card' + (openInfoId === ev.id ? ' selected' : '');
-    card.setAttribute('data-cat', ev.cat);
-    card.innerHTML = `
-      ${isMe ? '<div class="mine-dot"></div>' : ''}
-      <div class="ev-card-top">
-        <div class="ev-icon" style="background:${color}22">${ev.icon||'📍'}</div>
-        <div class="ev-info">
-          <div class="ev-title">${ev.title}</div>
-          <div class="ev-loc">📍 ${ev.loc||''}</div>
-        </div>
-      </div>
-      <div class="ev-footer">
-        <span class="ev-cat ${ev.cat}">${ev.cat}</span>
-        <span class="ev-time ${tl.urgent?'urgent':''}">${tl.text}</span>
-      </div>`;
-    card.addEventListener('click', () => {
-      if (ev.lat && ev.lng) {
-        kakaoMap.setLevel(4);
-        showInfo(ev.id);
-      }
-    });
-    scroll.appendChild(card);
-  });
 }
 
-// Category filter
-document.getElementById('cat-chips').addEventListener('click', e => {
-  const chip = e.target.closest('.cat-chip');
-  if (!chip) return;
-  document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
-  chip.classList.add('active');
-  activeFilter = chip.getAttribute('data-cat');
-  closeInfo();
-  renderMarkers();
-  renderCards();
-});
+function markDirty() {
+  dirty = true;
+  updateDirty();
+  saveLocal();
+}
 
-// Search
-document.getElementById('search-icon-btn').addEventListener('click', e => {
-  e.stopPropagation();
-  document.getElementById('search-bar').classList.add('open');
-  setTimeout(() => document.getElementById('search-input').focus(), 250);
-});
+function updateDirty() {
+  const dot = document.getElementById('dirtyDot');
+  dot.classList.toggle('clean', !dirty);
+  dot.title = dirty ? '저장되지 않은 변경사항 (EXPORT 누르세요)' : '저장됨';
+}
 
-document.getElementById('search-close').addEventListener('click', () => {
-  document.getElementById('search-bar').classList.remove('open');
-  document.getElementById('search-input').value = '';
-  renderCards();
-  renderMarkers();
-});
-
-document.getElementById('search-input').addEventListener('input', e => {
-  const kw = e.target.value.trim().toLowerCase();
-  if (!kw) { renderCards(); renderMarkers(); return; }
-  const list = events.filter(ev =>
-    ev.title?.toLowerCase().includes(kw) ||
-    ev.loc?.toLowerCase().includes(kw) ||
-    ev.desc?.toLowerCase().includes(kw)
-  );
-  const visIds = new Set(list.map(e => e.id));
-  Object.keys(markers).forEach(id => {
-    markers[id].setMap(visIds.has(id) ? kakaoMap : null);
-  });
-  // Simplified card render for search
-  const scroll = document.getElementById('cards-scroll');
-  document.getElementById('sheet-count').textContent = list.length;
-  if (!list.length) {
-    scroll.innerHTML = '<div class="no-events">검색 결과 없음 🔍</div>';
-    return;
+// =============================================================
+// 뷰 전환
+// =============================================================
+async function goTabs() {
+  state.view = 'tabs';
+  state.cursor = 0;
+  hidePreview();
+  setTitle(fileName.replace(/\.xlsx?$/,'').slice(0,18) || 'iPod');
+  if (!workbook.tabs.length) {
+    return renderEmpty('탭이 없어요.<br>엑셀에 시트를 추가하세요.');
   }
-  scroll.innerHTML = '';
-  list.forEach(ev => {
-    const tl = timeLeft(ev.expiry);
-    const color = CAT_COLORS[ev.cat] || '#aaa';
-    const card = document.createElement('div');
-    card.className = 'ev-card';
-    card.setAttribute('data-cat', ev.cat);
-    card.innerHTML = `
-      <div class="ev-card-top">
-        <div class="ev-icon" style="background:${color}22">${ev.icon||'📍'}</div>
-        <div class="ev-info">
-          <div class="ev-title">${ev.title}</div>
-          <div class="ev-loc">📍 ${ev.loc||''}</div>
-        </div>
-      </div>
-      <div class="ev-footer">
-        <span class="ev-cat ${ev.cat}">${ev.cat}</span>
-        <span class="ev-time ${tl.urgent?'urgent':''}">${tl.text}</span>
-      </div>`;
-    card.addEventListener('click', () => {
-      if (ev.lat && ev.lng) { kakaoMap.setLevel(4); showInfo(ev.id); }
-    });
-    scroll.appendChild(card);
-  });
-});
-
-// Context menu buttons
-document.getElementById('ctx-add-pin').addEventListener('click', () => {
-  hideContextMenu();
-  setTimeout(openModal, 150);
-});
-
-document.getElementById('ctx-cancel').addEventListener('click', hideContextMenu);
-
-// Location button
-document.getElementById('loc-btn').addEventListener('click', e => {
-  e.stopPropagation();
-  moveToCurrentLocation(true);
-});
-
-// ── FAB Drag & Drop ──
-const fabBtn = document.getElementById('fab');
-const dragPreview = document.getElementById('drag-preview');
-const crosshair = document.getElementById('map-crosshair');
-const dragHint = document.getElementById('drag-hint');
-let isDragging = false;
-
-function startDrag(clientX, clientY) {
-  if (!currentUser) { toast('먼저 로그인해주세요! 🔐', 'error'); return false; }
-  if (!kakaoMap) return false;
-  isDragging = true;
-  fabBtn.classList.add('dragging');
-  dragPreview.classList.add('show');
-  dragPreview.style.left = clientX + 'px';
-  dragPreview.style.top = clientY + 'px';
-  crosshair.classList.add('show');
-  dragHint.classList.add('show');
-  setTimeout(() => dragHint.classList.remove('show'), 2000);
-  return true;
+  renderList(workbook.tabs.map(t => ({
+    label: t.title,
+    meta: String(t.rows.length)
+  })));
 }
 
-function moveDrag(clientX, clientY) {
-  if (!isDragging) return;
-  dragPreview.style.left = clientX + 'px';
-  dragPreview.style.top = clientY + 'px';
-}
-
-function endDrag(clientX, clientY) {
-  if (!isDragging) return;
-  isDragging = false;
-  fabBtn.classList.remove('dragging');
-  dragPreview.classList.remove('show');
-  crosshair.classList.remove('show');
-  dragHint.classList.remove('show');
-
-  // Check if drop location is on map area
-  const mapRect = mapContainer.getBoundingClientRect();
-  if (clientX < mapRect.left || clientX > mapRect.right ||
-      clientY < mapRect.top || clientY > mapRect.bottom) {
-    toast('지도 위에 놓아주세요', 'error');
-    return;
+async function goRows(idx) {
+  state.view = 'rows';
+  state.currentTabIdx = idx;
+  state.cursor = 0;
+  hidePreview();
+  const tab = workbook.tabs[idx];
+  setTitle(tab.title.slice(0, 18));
+  if (!tab.rows.length) {
+    return renderEmpty('행이 없어요.<br>엑셀에서 A열=이름, B열=숫자로 채우세요.');
   }
-
-  // Convert screen coords to latLng
-  const ll = screenToLatLng(clientX, clientY);
-  if (!ll) return;
-  pendingLat = ll.getLat();
-  pendingLng = ll.getLng();
-
-  // Reverse geocode and open modal
-  const gc = new kakao.maps.services.Geocoder();
-  gc.coord2Address(pendingLng, pendingLat, (res, status) => {
-    let addr = pendingLat.toFixed(5) + ', ' + pendingLng.toFixed(5);
-    if (status === kakao.maps.services.Status.OK && res[0]) {
-      addr = res[0].road_address ? res[0].road_address.address_name : res[0].address.address_name;
-    }
-    document.getElementById('f-loc').value = addr;
-    document.getElementById('loc-preview').textContent = '📍 ' + addr;
-    document.getElementById('loc-preview').classList.add('show');
-    openModal();
-  });
+  renderRows();
 }
 
-// Touch events: start on FAB, track on document (따라가기)
-fabBtn.addEventListener('touchstart', e => {
-  const t = e.touches[0];
-  if (startDrag(t.clientX, t.clientY)) e.preventDefault();
-}, {passive: false});
+function currentTab() { return workbook.tabs[state.currentTabIdx]; }
+function currentRow() { return currentTab()?.rows[state.cursor]; }
 
-// document 전체에서 touchmove/touchend 감지 (손가락이 FAB 밖으로 나가도 추적)
-document.addEventListener('touchmove', e => {
-  if (!isDragging) return;
+function bump(delta) {
+  if (state.view !== 'rows') return;
+  const row = currentRow();
+  if (!row) return;
+  row.count = (row.count || 0) + delta;
+  markDirty();
+  if (state.preview) updatePreview();
+  else renderRows();
+  toast(delta > 0 ? `+${delta}` : `${delta}`);
+}
+
+async function setImageFromFile(file) {
+  if (!file) return;
+  // 너무 큰 이미지는 경고 (용량 절약)
+  if (file.size > 2 * 1024 * 1024) {
+    if (!confirm('이미지가 2MB를 넘어요. 계속할까요?\n(브라우저 저장 한계에 가까워질 수 있음)')) return;
+  }
+  const dataUrl = await new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => res(fr.result);
+    fr.onerror = () => rej(new Error('read fail'));
+    fr.readAsDataURL(file);
+  });
+  const row = currentRow();
+  if (!row) return;
+  row.image = dataUrl;
+  markDirty();
+  updatePreview();
+  renderRows();
+  toast('이미지 설정됨');
+}
+
+// =============================================================
+// 렌더
+// =============================================================
+const listUl = document.getElementById('listUl');
+const emptyView = document.getElementById('emptyView');
+const previewView = document.getElementById('previewView');
+const previewImg = document.getElementById('previewImg');
+const previewLabel = document.getElementById('previewLabel');
+const previewCount = document.getElementById('previewCount');
+const screenTitle = document.getElementById('screenTitle');
+const toastEl = document.getElementById('toast');
+
+function setTitle(t) { screenTitle.textContent = t; }
+
+function renderEmpty(html) {
+  listUl.style.display = 'none';
+  emptyView.style.display = 'block';
+  hidePreview();
+  emptyView.innerHTML = html;
+  // 파일 열기 인풋이 렌더된 경우 바인딩
+  const openF = document.getElementById('openFile');
+  if (openF) openF.addEventListener('change', onFileOpen);
+}
+
+function renderList(items) {
+  emptyView.style.display = 'none';
+  listUl.style.display = 'block';
+  listUl.innerHTML = '';
+  items.forEach((it) => {
+    const li = document.createElement('li');
+    const thumb = it.image
+      ? `<span class="thumb" style="background-image:url('${it.image.replace(/'/g,"\\'")}')"></span>`
+      : `<span class="thumb"></span>`;
+    li.innerHTML = `
+      ${thumb}
+      <span class="label">${esc(it.label)}</span>
+      ${it.meta != null ? `<span class="meta">${esc(it.meta)}</span>` : ''}
+      <span class="chev">›</span>`;
+    listUl.appendChild(li);
+  });
+  applyCursor();
+}
+
+function renderRows() {
+  renderList(currentTab().rows.map(r => ({
+    label: r.label, meta: String(r.count), image: r.image
+  })));
+}
+
+function applyCursor() {
+  const lis = [...listUl.querySelectorAll('li')];
+  lis.forEach((li, i) => li.classList.toggle('active', i === state.cursor));
+  if (!lis.length) return;
+  const liH = lis[0].getBoundingClientRect().height || 36;
+  const listH = document.getElementById('list').getBoundingClientRect().height;
+  const visibleCount = Math.max(1, Math.floor(listH / liH));
+  const anchor = Math.min(state.cursor, Math.max(0, lis.length - visibleCount));
+  listUl.style.transform = `translateY(${-anchor * liH}px)`;
+}
+
+function showPreview() {
+  if (state.view !== 'rows' || !currentRow()) return;
+  state.preview = true;
+  previewView.classList.add('show');
+  listUl.style.display = 'none';
+  updatePreview();
+}
+function hidePreview() {
+  state.preview = false;
+  previewView.classList.remove('show');
+  if (state.view === 'tabs' || state.view === 'rows') {
+    listUl.style.display = 'block';
+  }
+}
+function updatePreview() {
+  const r = currentRow();
+  if (!r) return;
+  previewImg.src = r.image || '';
+  previewImg.style.display = r.image ? 'block' : 'none';
+  previewLabel.textContent = r.label;
+  previewCount.textContent = `count: ${r.count}`;
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => (
+    {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+  ));
+}
+
+let toastTimer;
+function toast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1200);
+}
+
+// =============================================================
+// 휠 & 버튼
+// =============================================================
+const wheel = document.getElementById('wheel');
+let dragging = false, lastAngle = 0, accumAngle = 0;
+const DEG_PER_ITEM = 24;
+
+function angleFromEvent(e) {
+  const r = wheel.getBoundingClientRect();
+  return Math.atan2(e.clientY - (r.top + r.height/2),
+                    e.clientX - (r.left + r.width/2)) * 180 / Math.PI;
+}
+
+wheel.addEventListener('pointerdown', (e) => {
+  if (e.target.closest('.center-btn') || e.target.closest('.tag')) return;
+  dragging = true;
+  wheel.classList.add('dragging');
+  wheel.setPointerCapture(e.pointerId);
+  lastAngle = angleFromEvent(e);
+});
+wheel.addEventListener('pointermove', (e) => {
+  if (!dragging) return;
+  const a = angleFromEvent(e);
+  let d = a - lastAngle;
+  if (d > 180) d -= 360;
+  if (d < -180) d += 360;
+  accumAngle += d;
+  lastAngle = a;
+  while (accumAngle >= DEG_PER_ITEM) { moveCursor(1); accumAngle -= DEG_PER_ITEM; }
+  while (accumAngle <= -DEG_PER_ITEM) { moveCursor(-1); accumAngle += DEG_PER_ITEM; }
+});
+function endDrag() {
+  if (!dragging) return;
+  dragging = false;
+  wheel.classList.remove('dragging');
+  accumAngle = 0;
+}
+wheel.addEventListener('pointerup', endDrag);
+wheel.addEventListener('pointercancel', endDrag);
+
+function moveCursor(delta) {
+  const max = (state.view === 'tabs' ? workbook?.tabs.length
+             : state.view === 'rows' ? currentTab()?.rows.length
+             : 0) - 1;
+  if (max < 0) return;
+  state.cursor = Math.max(0, Math.min(max, state.cursor + delta));
+  if (state.preview) updatePreview();
+  else applyCursor();
+}
+
+document.getElementById('btnMenu').addEventListener('click', () => {
+  if (state.preview) return hidePreview();
+  if (state.view === 'rows') goTabs();
+  else if (state.view === 'tabs') showStart();
+});
+document.getElementById('btnPlay').addEventListener('click', () => {
+  exportWorkbook();
+});
+document.getElementById('btnPrev').addEventListener('click', () => {
+  if (state.view === 'rows') bump(-1);
+});
+document.getElementById('btnNext').addEventListener('click', () => {
+  if (state.view === 'rows') bump(+1);
+});
+
+document.getElementById('centerBtn').addEventListener('click', () => {
+  if (state.view === 'tabs') {
+    goRows(state.cursor);
+  } else if (state.view === 'rows') {
+    if (state.preview) hidePreview();
+    else showPreview();
+  }
+});
+
+// 이미지 교체 (미리보기 화면에서)
+document.getElementById('imgPicker').addEventListener('change', (e) => {
+  setImageFromFile(e.target.files?.[0]);
+  e.target.value = '';
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowDown') moveCursor(1);
+  else if (e.key === 'ArrowUp') moveCursor(-1);
+  else if (e.key === 'ArrowLeft' && state.view === 'rows') bump(-1);
+  else if (e.key === 'ArrowRight' && state.view === 'rows') bump(+1);
+  else if (e.key === 'Enter') document.getElementById('centerBtn').click();
+  else if (e.key === 'Escape' || e.key === 'Backspace') document.getElementById('btnMenu').click();
+  else if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); exportWorkbook(); }
+});
+
+wheel.addEventListener('wheel', (e) => {
   e.preventDefault();
-  const t = e.touches[0];
-  if (t) moveDrag(t.clientX, t.clientY);
-}, {passive: false});
+  moveCursor(e.deltaY > 0 ? 1 : -1);
+}, { passive: false });
 
-document.addEventListener('touchend', e => {
-  if (!isDragging) return;
-  const t = e.changedTouches[0];
-  if (t) endDrag(t.clientX, t.clientY);
-}, {passive: false});
-
-document.addEventListener('touchcancel', () => {
-  if (isDragging) {
-    isDragging = false;
-    fabBtn.classList.remove('dragging');
-    dragPreview.classList.remove('show');
-    crosshair.classList.remove('show');
-    dragHint.classList.remove('show');
-  }
+// 페이지 떠날 때 미저장 경고
+window.addEventListener('beforeunload', (e) => {
+  if (dirty) { e.preventDefault(); e.returnValue = ''; }
 });
 
-// Mouse events on FAB (PC)
-fabBtn.addEventListener('mousedown', e => {
-  if (startDrag(e.clientX, e.clientY)) {
-    e.preventDefault();
-    const onMove = ev => moveDrag(ev.clientX, ev.clientY);
-    const onUp = ev => {
-      endDrag(ev.clientX, ev.clientY);
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-    };
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-  }
-});
-
-// Modal
-function openModal() {
-  const d = new Date(Date.now() + 3*864e5);
-  document.getElementById('f-expiry').value = new Date(d - d.getTimezoneOffset()*6e4).toISOString().slice(0,16);
-  document.getElementById('modal').classList.add('open');
-}
-
-document.getElementById('modal-cancel').addEventListener('click', () => {
-  document.getElementById('modal').classList.remove('open');
-  document.getElementById('loc-preview').classList.remove('show');
-});
-
-document.getElementById('pin-style-tabs').addEventListener('click', e => {
-  const tab = e.target.closest('.pst');
-  if (!tab) return;
-  document.querySelectorAll('.pst').forEach(t => t.classList.remove('active'));
-  tab.classList.add('active');
-  selectedPinStyle = tab.getAttribute('data-style');
-  document.getElementById('panel-icon').style.display = selectedPinStyle === 'icon' ? '' : 'none';
-  document.getElementById('panel-text-only').style.display = selectedPinStyle === 'text-only' ? '' : 'none';
-});
-
-document.getElementById('cat-select').addEventListener('click', e => {
-  const opt = e.target.closest('.cat-opt');
-  if (!opt) return;
-  document.querySelectorAll('.cat-opt').forEach(o => o.classList.remove('sel'));
-  opt.classList.add('sel');
-  selectedCat = opt.getAttribute('data-v');
-});
-
-// Icon grid
-const iconGrid = document.getElementById('icon-grid');
-ICONS.forEach(ic => {
-  const d = document.createElement('div');
-  d.className = 'icon-opt' + (ic === selectedIcon ? ' sel' : '');
-  d.textContent = ic;
-  d.addEventListener('click', () => {
-    document.querySelectorAll('.icon-opt').forEach(o => o.classList.remove('sel'));
-    d.classList.add('sel');
-    selectedIcon = ic;
-  });
-  iconGrid.appendChild(d);
-});
-
-// Submit
-document.getElementById('modal-submit').addEventListener('click', async () => {
-  if (!currentUser) { toast('로그인이 필요해요', 'error'); return; }
-  if (!pendingLat || !pendingLng) { toast('지도를 먼저 길게 눌러주세요', 'error'); return; }
-  const title = document.getElementById('f-title').value.trim();
-  const expiry = document.getElementById('f-expiry').value;
-  if (!title || !expiry) { toast('이름과 유효기간을 입력해주세요', 'error'); return; }
-  const btn = document.getElementById('modal-submit');
-  btn.disabled = true;
-  btn.textContent = '저장 중...';
-  try {
-    await addDoc(collection(db, 'events'), {
-      title,
-      cat: selectedCat,
-      loc: document.getElementById('f-loc').value.trim() || '위치 미정',
-      desc: document.getElementById('f-desc').value.trim() || '',
-      expiry: new Date(expiry),
-      lat: pendingLat,
-      lng: pendingLng,
-      pinStyle: selectedPinStyle,
-      icon: selectedPinStyle === 'icon' ? selectedIcon : '',
-      label: title,
-      authorUid: currentUser.uid,
-      authorName: currentUser.displayName || currentUser.email,
-      createdAt: serverTimestamp(),
-    });
-    document.getElementById('modal').classList.remove('open');
-    document.getElementById('loc-preview').classList.remove('show');
-    ['f-title','f-loc','f-desc'].forEach(id => document.getElementById(id).value = '');
-    toast('핀이 등록됐어요! 🎉');
-  } catch(e) {
-    toast('저장 실패: ' + e.message, 'error');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '핀 꽂기 📌';
-  }
-});
-
-setInterval(renderCards, 60000);
+start();
 </script>
 
 </body>
