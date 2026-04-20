@@ -82,7 +82,6 @@ will-change: transform;
 .view.slide-out-right { transform: translateX(100%); }
 .view.show            { transform: translateX(0); }
 
-/* 리스트 (탭 선택) */
 .list { position: absolute; inset: 0; overflow: hidden; }
 .list ul { list-style: none; margin: 0; padding: 0; transition: transform .18s cubic-bezier(.2,.8,.2,1); }
 .list li {
@@ -101,55 +100,35 @@ color: #fff;
 }
 .list li.active .meta, .list li.active .chev { color: rgba(255,255,255,.95); }
 
-/* 스프레드시트 그리드 */
 .sheet-view {
 position: absolute; inset: 0;
-overflow: auto;
-font-size: 12px;
+overflow: auto; font-size: 12px;
 -webkit-overflow-scrolling: touch;
 }
 .sheet-view table {
-border-collapse: separate;
-border-spacing: 0;
-width: max-content;
-min-width: 100%;
+border-collapse: separate; border-spacing: 0;
+width: max-content; min-width: 100%;
 }
 .sheet-view th, .sheet-view td {
 border-right: 1px solid rgba(0,0,0,.1);
 border-bottom: 1px solid rgba(0,0,0,.08);
 padding: 6px 8px;
-min-width: 92px;
-max-width: 160px;
-overflow: hidden;
-text-overflow: ellipsis;
-white-space: nowrap;
-vertical-align: middle;
+min-width: 92px; max-width: 160px;
+overflow: hidden; text-overflow: ellipsis;
+white-space: nowrap; vertical-align: middle;
 }
 .sheet-view th {
 background: linear-gradient(180deg, #4a77c9, var(–bar-color));
-color: #fff;
-font-weight: 700;
-font-size: 11px;
-text-align: left;
-position: sticky;
-top: 0;
-z-index: 3;
+color: #fff; font-weight: 700; font-size: 11px;
+text-align: left; position: sticky; top: 0; z-index: 3;
 }
-.sheet-view th.row-head,
-.sheet-view td.row-head {
-background: #e4e1d7;
-position: sticky;
-left: 0;
-z-index: 2;
-font-weight: 600;
-color: #333;
-min-width: 70px;
-max-width: 110px;
+.sheet-view th.row-head, .sheet-view td.row-head {
+background: #e4e1d7; position: sticky; left: 0; z-index: 2;
+font-weight: 600; color: #333;
+min-width: 70px; max-width: 110px;
 }
 .sheet-view th.row-head { z-index: 4; }
-.sheet-view td.cell-img {
-padding: 3px;
-}
+.sheet-view td.cell-img { padding: 3px; }
 .sheet-view td.cell-img .thumb {
 width: 30px; height: 30px; border-radius: 4px;
 background: rgba(0,0,0,.08) center/cover no-repeat;
@@ -157,28 +136,125 @@ border: 1px solid rgba(0,0,0,.15);
 display: inline-block;
 }
 .sheet-view td.empty-cell { color: #bbb; font-style: italic; }
-.sheet-view td.active {
+.sheet-view td.active, .sheet-view th.active {
 background: rgba(74,119,201,.25);
 outline: 2px solid var(–bar-color);
 outline-offset: -2px;
+color: #1a1a1a;
+}
+.sheet-view th.active {
+background: linear-gradient(180deg, #6a97e9, #3e65b8);
+color: #fff;
 }
 .sheet-view td.row-head.active-row { background: #c9c6ba; }
+.sheet-view th.active.row-head {
+background: #b8b4a6; color: #1a1a1a;
+}
+
+.sheet-view th.add-col, .sheet-view td.add-col {
+background: #f6f3eb;
+color: var(–bar-color);
+font-weight: 600;
+text-align: center;
+min-width: 92px;
+cursor: pointer;
+}
+.sheet-view th.add-col { background: #d9d5c8; color: #4a77c9; }
+.sheet-view tr.add-row td {
+background: #f6f3eb;
+color: var(–bar-color);
+font-weight: 600;
+text-align: center;
+cursor: pointer;
+}
+.sheet-view tr.add-row td.row-head { color: var(–bar-color); }
+
+/* 큰 보기 (썸네일/텍스트 상세) */
+.bigview {
+position: absolute; inset: 0;
+background: #000;
+overflow: hidden;
+}
+/* 꽉 차는 이미지 레이어 */
+.bigview .bv-img {
+position: absolute; inset: 0;
+width: 100%; height: 100%;
+object-fit: contain;
+background: #000;
+}
+/* 오버레이 (상단/하단 반투명) */
+.bigview .bv-overlay-top {
+position: absolute; top: 0; left: 0; right: 0;
+padding: 12px 16px;
+background: linear-gradient(180deg, rgba(0,0,0,.7) 0%, rgba(0,0,0,0) 100%);
+color: #fff;
+pointer-events: none;
+z-index: 2;
+}
+.bigview .bv-overlay-bottom {
+position: absolute; bottom: 0; left: 0; right: 0;
+padding: 16px;
+background: linear-gradient(0deg, rgba(0,0,0,.75) 0%, rgba(0,0,0,0) 100%);
+color: #fff;
+pointer-events: none;
+z-index: 2;
+display: flex; flex-direction: column; gap: 4px;
+}
+.bigview .bv-head {
+color: #fff; font-size: 13px; font-weight: 600;
+letter-spacing: .03em;
+text-shadow: 0 1px 3px rgba(0,0,0,.8);
+}
+.bigview .bv-hint {
+color: rgba(255,255,255,.7); font-size: 11px;
+text-shadow: 0 1px 2px rgba(0,0,0,.8);
+}
+/* 텍스트 전용 셀일 때: 중앙 큰 텍스트 */
+.bigview .bv-text-wrap {
+position: absolute; inset: 0;
+display: flex; align-items: center; justify-content: center;
+padding: 56px 20px;
+}
+.bigview .bv-text {
+color: #fff; font-size: 20px; line-height: 1.5;
+max-width: 100%; max-height: 100%; overflow: auto;
+text-align: center; white-space: pre-wrap;
+word-break: break-word;
+text-shadow: 0 1px 3px rgba(0,0,0,.6);
+}
+.bigview .bv-empty {
+color: rgba(255,255,255,.4); font-size: 15px; font-style: italic;
+display: flex; align-items: center; justify-content: center;
+height: 100%;
+}
+/* 헤더 정보 표시 */
+.bigview .bv-header-info {
+position: absolute; inset: 0;
+display: flex; flex-direction: column; align-items: center; justify-content: center;
+gap: 14px; padding: 56px 20px; color: #fff;
+}
+.bigview .bv-header-info .bh-title {
+font-size: 22px; font-weight: 700;
+}
+.bigview .bv-header-info .bh-sub {
+color: rgba(255,255,255,.6); font-size: 13px;
+}
+.bigview .bv-header-info .bh-opts {
+color: rgba(255,255,255,.85); font-size: 13px;
+max-width: 80%; text-align: center; line-height: 1.6;
+}
 
 /* 편집 화면 */
 .editor {
 position: absolute; inset: 0;
-overflow-y: auto;
-padding: 14px;
+overflow-y: auto; padding: 14px;
 -webkit-overflow-scrolling: touch;
 }
 .editor .ed-label {
 font-size: 11px; color: #666; text-transform: uppercase;
 letter-spacing: .1em; margin-bottom: 4px;
 }
-.editor .ed-rowname {
-font-size: 18px; font-weight: 700; margin-bottom: 14px;
-color: #222;
-}
+.editor .ed-rowname { font-size: 18px; font-weight: 700; margin-bottom: 14px; color: #222; }
 .editor .ed-field {
 font-size: 13px; color: #555; margin: 10px 0 6px;
 display: flex; align-items: center; gap: 6px;
@@ -187,9 +263,7 @@ display: flex; align-items: center; gap: 6px;
 font-size: 10px; padding: 1px 6px; border-radius: 10px;
 background: #e4e1d7; color: #555;
 }
-.editor .options-row {
-display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;
-}
+.editor .options-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .editor .options-row .opt {
 background: #fff; border: 1px solid #cfcbbf;
 border-radius: 14px; padding: 5px 12px; font-size: 13px;
@@ -198,36 +272,22 @@ cursor: pointer;
 .editor .options-row .opt.selected {
 background: var(–bar-color); color: #fff; border-color: var(–bar-color);
 }
-.editor textarea.ed-input {
-width: 100%;
-min-height: 64px;
-padding: 8px 10px;
-border: 1px solid #c9c4b8;
-border-radius: 6px;
-font-family: inherit;
-font-size: 14px;
-background: #fff;
-resize: vertical;
+.editor textarea.ed-input,
+.editor input.ed-input {
+width: 100%; padding: 8px 10px;
+border: 1px solid #c9c4b8; border-radius: 6px;
+font-family: inherit; font-size: 14px; background: #fff;
 }
-.editor textarea.ed-input:focus {
-outline: 2px solid var(–bar-color);
-outline-offset: -1px;
+.editor textarea.ed-input { min-height: 64px; resize: vertical; }
+.editor textarea.ed-input:focus, .editor input.ed-input:focus {
+outline: 2px solid var(–bar-color); outline-offset: -1px;
 }
 .editor .img-block {
-background: #fff;
-border: 1px dashed #c9c4b8;
-border-radius: 8px;
-padding: 10px;
-text-align: center;
-display: flex;
-flex-direction: column;
-gap: 8px;
-align-items: center;
+background: #fff; border: 1px dashed #c9c4b8; border-radius: 8px;
+padding: 10px; text-align: center;
+display: flex; flex-direction: column; gap: 8px; align-items: center;
 }
-.editor .img-block img {
-max-width: 100%; max-height: 160px;
-border-radius: 6px;
-}
+.editor .img-block img { max-width: 100%; max-height: 160px; border-radius: 6px; }
 .editor .img-block .btns { display: flex; gap: 6px; }
 .editor .img-block button, .editor .img-block label {
 background: var(–bar-color); color: #fff;
@@ -237,11 +297,22 @@ padding: 5px 12px; font-size: 12px; cursor: pointer;
 .editor .img-block button.del { background: #c44; }
 .editor .img-block input[type=file] { display: none; }
 
+.editor .danger-zone {
+margin-top: 16px; padding-top: 14px;
+border-top: 1px dashed #d3cec3;
+}
+.editor .danger-zone button {
+width: 100%; padding: 8px;
+background: transparent;
+border: 1px solid #c44; color: #c44;
+border-radius: 6px; font-size: 12px; cursor: pointer;
+margin-bottom: 6px;
+}
+.editor .danger-zone button:active { background: #fee; }
+
 .editor-actions {
-position: sticky;
-bottom: 0;
-display: flex; gap: 8px;
-padding: 10px 0 0;
+position: sticky; bottom: 0;
+display: flex; gap: 8px; padding: 10px 0 0;
 background: linear-gradient(180deg, rgba(207,215,199,0) 0%, var(–screen) 30%);
 }
 .editor-actions button {
@@ -284,7 +355,40 @@ max-width: 80%; text-align: center;
 }
 .toast.show { opacity: 1; }
 
-.wheel-wrap { display: flex; align-items: center; justify-content: center; padding-top: 12px; flex-shrink: 0; }
+/* ── 컨트롤 영역: MENU/EDIT (휠 밖) + 휠 ── */
+.controls-wrap {
+display: flex; flex-direction: column; align-items: center;
+padding-top: 12px; flex-shrink: 0; gap: 8px;
+}
+.top-btns {
+display: flex; justify-content: space-between;
+width: min(72%, 300px);
+gap: 12px;
+}
+.top-btn {
+flex: 1;
+padding: 7px 10px;
+border: none;
+background: linear-gradient(180deg, #f0eee8 0%, #dbd7ce 100%);
+border-radius: 8px;
+font-size: 11px; font-weight: 700; letter-spacing: .1em;
+color: #3a3a3a;
+cursor: pointer;
+box-shadow:
+inset 0 1px 0 rgba(255,255,255,.7),
+0 1px 3px rgba(0,0,0,.12),
+0 0 0 1px var(–wheel-edge);
+transition: transform .08s, box-shadow .08s;
+}
+.top-btn:active {
+transform: translateY(1px);
+box-shadow: inset 0 2px 3px rgba(0,0,0,.15), 0 0 0 1px var(–wheel-edge);
+}
+.top-btn.edit {
+background: linear-gradient(180deg, #6a97e9 0%, #3e65b8 100%);
+color: #fff;
+}
+
 .wheel {
 width: min(58%, 240px); aspect-ratio: 1/1; border-radius: 50%;
 position: relative;
@@ -326,11 +430,22 @@ transition: transform .2s ease, opacity .2s ease;
 opacity: 0; pointer-events: none; mix-blend-mode: multiply;
 }
 .wheel.dragging .fingerLight { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-.tag { position: absolute; font-weight: 700; color: #4a4a4a; letter-spacing: .06em; cursor: pointer; font-size: 11px; z-index: 2; }
-.tag.menu { top: 8%; left: 50%; transform: translateX(-50%); }
-.tag.prev { top: 50%; left: 8%;  transform: translateY(-50%); font-size: 14px; }
-.tag.next { top: 50%; right: 8%; transform: translateY(-50%); font-size: 14px; }
-.tag.play { bottom: 8%; left: 50%; transform: translateX(-50%); }
+
+/* 4방향 삼각형 */
+.arrow {
+position: absolute;
+color: #4a4a4a;
+cursor: pointer; z-index: 2;
+font-size: 16px;
+line-height: 1;
+padding: 6px;
+}
+.arrow.up    { top: 6%; left: 50%; transform: translateX(-50%); }
+.arrow.down  { bottom: 6%; left: 50%; transform: translateX(-50%); }
+.arrow.left  { top: 50%; left: 6%; transform: translateY(-50%); }
+.arrow.right { top: 50%; right: 6%; transform: translateY(-50%); }
+.arrow:active { color: var(–bar-color); }
+
 .center-btn {
 position: absolute; top: 50%; left: 50%;
 width: 38%; height: 38%;
@@ -396,15 +511,19 @@ background: #ff9d5a; box-shadow: 0 0 4px rgba(255,180,80,.8);
     </div>
 
 ```
-<div class="wheel-wrap">
+<div class="controls-wrap">
+  <div class="top-btns">
+    <button class="top-btn" id="btnMenu">MENU</button>
+    <button class="top-btn edit" id="btnEdit">EDIT</button>
+  </div>
   <div class="wheel" id="wheel">
     <span class="tickmark" id="tickmark"></span>
     <span class="fingerLight" id="fingerLight"></span>
-    <span class="tag menu" id="btnMenu">MENU</span>
-    <span class="tag prev" id="btnPrev">◀</span>
-    <span class="tag next" id="btnNext">▶</span>
-    <span class="tag play" id="btnPlay">EDIT</span>
-    <button class="center-btn" id="centerBtn" aria-label="Edit"></button>
+    <span class="arrow up"    id="btnUp">▲</span>
+    <span class="arrow down"  id="btnDown">▼</span>
+    <span class="arrow left"  id="btnLeft">◀</span>
+    <span class="arrow right" id="btnRight">▶</span>
+    <button class="center-btn" id="centerBtn" aria-label="View"></button>
   </div>
 </div>
 ```
@@ -423,30 +542,26 @@ background: #ff9d5a; box-shadow: 0 0 4px rgba(255,180,80,.8);
 <div class="toast" id="toast"></div>
 
 <script>
-window.addEventListener('error', (e) => {
-  console.error(e);
-  toast('에러: ' + (e.message || '').slice(0, 60));
-});
-window.addEventListener('unhandledrejection', (e) => {
-  console.error(e);
-  toast('에러: ' + String(e.reason).slice(0, 60));
-});
+window.addEventListener('error', (e) => { console.error(e); toast('에러: ' + (e.message || '').slice(0, 60)); });
+window.addEventListener('unhandledrejection', (e) => { console.error(e); toast('에러: ' + String(e.reason).slice(0, 60)); });
 
-const LS_KEY = 'ipod-wb-v4';
-const LS_FILENAME = 'ipod-filename-v4';
+const LS_KEY = 'ipod-wb-v6';
+const LS_FILENAME = 'ipod-filename-v6';
 const IMG_HEADER_PATTERN = /^(사진|image|photo|img|이미지)/i;
 
 let workbook = null;
 let fileName = localStorage.getItem(LS_FILENAME) || 'ipod-data.xlsx';
 let dirty = false;
 
-// view: 'init' | 'tabs' | 'sheet' | 'editor'
+// view: 'init' | 'tabs' | 'sheet' | 'bigview' | 'editor'
+// sheet에서 rowCursor -1 = 헤더행(1행), 0..rows.length-1 = 실제, rows.length = "+행"
+// sheet에서 colCursor 0 = label(1열), 1..headers.length-1 = 실제, headers.length = "+열"
 const state = {
   view: 'init',
   currentTabIdx: -1,
   rowCursor: 0,
-  colCursor: 1,   // 0 = A열(라벨, 선택 불가), 1부터가 편집 가능한 B열
-  editor: null,   // 편집 중인 임시 값 { value, image }
+  colCursor: 0,
+  editor: null,
 };
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
@@ -455,9 +570,7 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
 // ====== 오디오/피드백 ======
 let audioCtx = null;
 function ensureAudio() {
-  if (!audioCtx) {
-    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
-  }
+  if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
   if (audioCtx?.state === 'suspended') audioCtx.resume();
 }
 function playTick() {
@@ -498,12 +611,7 @@ let currentView = null;
 let animating = false;
 const ANIM_DUR = 280;
 
-function createView(htmlContent) {
-  const v = document.createElement('div');
-  v.className = 'view';
-  v.innerHTML = htmlContent;
-  return v;
-}
+function createView(html) { const v = document.createElement('div'); v.className = 'view'; v.innerHTML = html; return v; }
 function transitionTo(newView, direction) {
   direction = direction || 'forward';
   if (animating && currentView) currentView.remove();
@@ -545,7 +653,7 @@ function showStart() {
   const hasBackup = !!localStorage.getItem(LS_KEY);
   let html = '<div class="empty">';
   html += '<div class="big">엑셀 파일로 시작</div>';
-  html += '<div>A열=라벨(읽기전용)<br>B열부터=편집 가능한 데이터<br>헤더명에 "사진/image" 포함 → 이미지 컬럼<br>_options 시트로 옵션 정의</div>';
+  html += '<div>A열=라벨, B열부터=데이터<br>헤더명에 "사진/image" → 이미지 컬럼<br>옵션은 _options 숨김 시트</div>';
   html += '<label class="btn">파일 열기<input type="file" id="openFile" accept=".xlsx,.xls"/></label>';
   html += '<button class="btn ghost" onclick="createNew()">새로 만들기</button>';
   if (hasBackup) html += '<br><button class="btn danger" onclick="resetAll()">저장 데이터 삭제</button>';
@@ -582,7 +690,7 @@ function createNew() {
       title: 'Sheet1',
       headers: ['호수', '상태', '사진', '메모'],
       columnTypes: ['label', 'text', 'image', 'text'],
-      columnOptions: { 1: ['청소완료','점검필요','공실'] },  // col 1 (상태) 에 옵션
+      columnOptions: { 1: ['청소완료','점검필요','공실'] },
       rows: [
         { cells: ['201호', '', '', ''] },
         { cells: ['202호', '', '', ''] },
@@ -592,12 +700,8 @@ function createNew() {
   };
   fileName = 'ipod-data.xlsx';
   localStorage.setItem(LS_FILENAME, fileName);
-  dirty = true;
-  saveLocal();
-  updateDirty();
-  goTabs();
+  dirty = true; saveLocal(); updateDirty(); goTabs();
 }
-
 function resetAll() {
   if (!confirm('저장된 데이터를 모두 삭제할까요?')) return;
   localStorage.removeItem(LS_KEY); localStorage.removeItem(LS_FILENAME);
@@ -612,7 +716,6 @@ async function parseWorkbook(arrayBuffer) {
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.load(arrayBuffer);
 
-  // _options 시트부터 파싱: { "시트명::헤더명": [옵션배열] }
   const optionsMap = {};
   const optSheet = wb.getWorksheet('_options');
   if (optSheet) {
@@ -631,9 +734,7 @@ async function parseWorkbook(arrayBuffer) {
   const tabs = [];
   wb.eachSheet((sheet) => {
     if (sheet.name === '_options') return;
-
-    // 이미지 수집
-    const imagesByPos = {};  // "row:col" -> dataUrl (1-index)
+    const imagesByPos = {};
     try {
       const imgList = sheet.getImages() || [];
       imgList.forEach((img) => {
@@ -646,33 +747,22 @@ async function parseWorkbook(arrayBuffer) {
       });
     } catch(e) { console.warn('이미지 파싱 실패', e); }
 
-    // 1행 = 헤더
     const headerRow = sheet.getRow(1);
     const headers = [];
-    // 끝 열 추정
     let lastCol = sheet.columnCount || 1;
-    for (let c = 1; c <= lastCol; c++) {
-      headers.push(cellText(headerRow.getCell(c)));
-    }
-    // 뒤쪽 빈 헤더 잘라내기
+    for (let c = 1; c <= lastCol; c++) headers.push(cellText(headerRow.getCell(c)));
     while (headers.length && !headers[headers.length - 1]) headers.pop();
     if (!headers.length) headers.push('A');
 
-    // 컬럼 타입 결정
-    const columnTypes = headers.map((h, i) => {
-      if (i === 0) return 'label';              // A열은 라벨
-      if (IMG_HEADER_PATTERN.test(h)) return 'image';
-      return 'text';
-    });
+    const columnTypes = headers.map((h, i) =>
+      i === 0 ? 'label' : (IMG_HEADER_PATTERN.test(h) ? 'image' : 'text'));
 
-    // 컬럼별 옵션
     const columnOptions = {};
     headers.forEach((h, i) => {
       const key = sheet.name + '::' + h;
       if (optionsMap[key]) columnOptions[i] = optionsMap[key];
     });
 
-    // 데이터 행
     const rows = [];
     const lastRow = sheet.rowCount;
     for (let r = 2; r <= lastRow; r++) {
@@ -690,28 +780,14 @@ async function parseWorkbook(arrayBuffer) {
           if (t) hasContent = true;
         }
       }
-      if (!hasContent && !cells[0]) continue;  // 완전 빈 행 skip
+      if (!hasContent && !cells[0]) continue;
       rows.push({ cells });
     }
 
-    tabs.push({
-      title: sheet.name,
-      headers,
-      columnTypes,
-      columnOptions,
-      rows
-    });
+    tabs.push({ title: sheet.name, headers, columnTypes, columnOptions, rows });
   });
 
-  if (!tabs.length) {
-    tabs.push({
-      title: 'Sheet1',
-      headers: ['라벨', '값'],
-      columnTypes: ['label', 'text'],
-      columnOptions: {},
-      rows: []
-    });
-  }
+  if (!tabs.length) tabs.push({ title: 'Sheet1', headers: ['라벨'], columnTypes: ['label'], columnOptions: {}, rows: [] });
   return { tabs };
 }
 
@@ -727,14 +803,12 @@ function cellText(cell) {
   }
   return String(v).trim();
 }
-
 function mediaToDataUrl(media) {
   try {
     const ext = (media.extension || 'png').toLowerCase();
     const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg'
                : ext === 'png' ? 'image/png'
-               : ext === 'gif' ? 'image/gif'
-               : 'image/png';
+               : ext === 'gif' ? 'image/gif' : 'image/png';
     let base64 = '';
     if (media.buffer) {
       const bytes = new Uint8Array(media.buffer);
@@ -755,58 +829,40 @@ async function buildAndExport() {
   try {
     toast('Export 중...');
     const wb = new ExcelJS.Workbook();
-
-    // 옵션 숨김 시트
     const optsAoa = [['sheet', 'header', 'options']];
     workbook.tabs.forEach(tab => {
       Object.keys(tab.columnOptions || {}).forEach(colIdx => {
         const header = tab.headers[Number(colIdx)];
         const opts = tab.columnOptions[colIdx];
-        if (header && opts?.length) {
-          optsAoa.push([tab.title, header, opts.join(', ')]);
-        }
+        if (header && opts?.length) optsAoa.push([tab.title, header, opts.join(', ')]);
       });
     });
 
     for (const tab of workbook.tabs) {
       const ws = wb.addWorksheet(tab.title);
-
-      // 헤더
       ws.addRow(tab.headers);
       const hasImgCol = tab.columnTypes.some(t => t === 'image');
-
-      // 열 너비
       tab.headers.forEach((h, i) => {
         const col = ws.getColumn(i + 1);
-        col.width = tab.columnTypes[i] === 'image' ? 12 : Math.max(10, h.length + 4);
+        col.width = tab.columnTypes[i] === 'image' ? 12 : Math.max(10, (h || '').length + 4);
       });
-
-      // 데이터 행
       tab.rows.forEach((r, i) => {
         const rowData = r.cells.map((v, c) => tab.columnTypes[c] === 'image' ? '' : v);
         const row = ws.addRow(rowData);
         if (hasImgCol) row.height = 60;
-
-        // 이미지 삽입
         r.cells.forEach((v, c) => {
           if (tab.columnTypes[c] !== 'image' || !v) return;
           const imgInfo = dataUrlToBuffer(v);
           if (!imgInfo) return;
           const imageId = wb.addImage({ buffer: imgInfo.buffer, extension: imgInfo.ext });
-          ws.addImage(imageId, {
-            tl: { col: c, row: i + 1 },  // 0-index; i+1 = 헤더 다음 행
-            ext: { width: 75, height: 75 }
-          });
+          ws.addImage(imageId, { tl: { col: c, row: i + 1 }, ext: { width: 75, height: 75 } });
         });
       });
-
-      // 헤더 스타일
       const hr = ws.getRow(1);
       hr.font = { bold: true };
       hr.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8E8E8' } };
     }
 
-    // _options 숨김 시트
     if (optsAoa.length > 1) {
       const optWs = wb.addWorksheet('_options', { state: 'hidden' });
       optsAoa.forEach(r => optWs.addRow(r));
@@ -814,9 +870,7 @@ async function buildAndExport() {
     }
 
     const buffer = await wb.xlsx.writeBuffer();
-    const blob = new Blob([buffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    });
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const fname = fileName || 'ipod-data.xlsx';
 
     if (navigator.share && navigator.canShare) {
@@ -831,7 +885,6 @@ async function buildAndExport() {
     fallbackDownload(blob, fname);
   } catch(err) { console.error(err); toast('Export 실패: ' + String(err.message).slice(0, 50)); }
 }
-
 function dataUrlToBuffer(dataUrl) {
   try {
     const m = dataUrl.match(/^data:image\/(\w+);base64,(.+)$/);
@@ -843,7 +896,6 @@ function dataUrlToBuffer(dataUrl) {
     return { buffer, ext };
   } catch(e) { return null; }
 }
-
 function fallbackDownload(blob, fname) {
   const url = URL.createObjectURL(blob);
   if (isIOS) {
@@ -861,20 +913,15 @@ function fallbackDownload(blob, fname) {
 }
 function closeDownload() { document.getElementById('dlModal').classList.remove('show'); }
 
-function saveLocal() {
-  try { localStorage.setItem(LS_KEY, JSON.stringify(workbook)); }
-  catch(e) { toast('저장 용량 초과'); }
-}
+function saveLocal() { try { localStorage.setItem(LS_KEY, JSON.stringify(workbook)); } catch(e) { toast('저장 용량 초과'); } }
 function markDirty() { dirty = true; updateDirty(); }
 function updateDirty() {
   const dot = document.getElementById('dirtyDot');
   dot.classList.toggle('clean', !dirty);
 }
 
-// ====== 이미지 리사이즈 ======
 async function resizeImage(file, maxDim, quality) {
-  maxDim = maxDim || 800;
-  quality = quality || 0.8;
+  maxDim = maxDim || 800; quality = quality || 0.8;
   const dataUrl = await new Promise((res, rej) => {
     const fr = new FileReader();
     fr.onload = () => res(fr.result);
@@ -898,7 +945,7 @@ async function resizeImage(file, maxDim, quality) {
 
 // ====== 뷰: 탭 목록 ======
 function goTabs(initial) {
-  const wasDeeper = (state.view === 'sheet' || state.view === 'editor');
+  const wasDeeper = (state.view !== 'init' && state.view !== 'tabs');
   state.view = 'tabs';
   state.rowCursor = 0;
   setTitle(fileName.replace(/\.xlsx?$/,'').slice(0,24) || 'iPod');
@@ -910,8 +957,7 @@ function goTabs(initial) {
     html += '<li data-idx="' + i + '" class="' + (i === state.rowCursor ? 'active' : '') + '">';
     html += '<span class="label">' + esc(t.title) + '</span>';
     html += '<span class="meta">' + t.rows.length + '행 × ' + t.headers.length + '열</span>';
-    html += '<span class="chev">›</span>';
-    html += '</li>';
+    html += '<span class="chev">›</span></li>';
   });
   html += '</ul></div>';
 
@@ -925,31 +971,36 @@ function goSheet(idx, direction) {
   direction = direction || 'forward';
   state.view = 'sheet';
   state.currentTabIdx = idx;
-  state.rowCursor = 0;
   const tab = workbook.tabs[idx];
-  // 첫 편집 가능 열로 커서 (0번은 label이므로 1부터)
-  state.colCursor = Math.min(1, tab.headers.length - 1);
+  // 초기 커서 복구 또는 안전 범위 보정
+  if (state.rowCursor < -1) state.rowCursor = -1;
+  if (state.rowCursor > tab.rows.length) state.rowCursor = tab.rows.length;
+  if (state.colCursor < 0) state.colCursor = 0;
+  if (state.colCursor > tab.headers.length) state.colCursor = tab.headers.length;
   setTitle(tab.title.slice(0, 24));
-
-  if (!tab.rows.length) { showEmptyView('행이 없어요.', direction); return; }
 
   const html = renderSheetHtml(tab);
   const v = createView(html);
   transitionTo(v, direction);
-  setTimeout(() => {
-    applyCellCursor();
-    scrollActiveIntoView();
-  }, ANIM_DUR + 20);
+  setTimeout(() => { applyCellCursor(); scrollActiveIntoView(); }, ANIM_DUR + 20);
 }
 
+/**
+ * rowCursor -1 = 헤더(1행), 0..rows.length-1 = 실제 행, rows.length = +행
+ * colCursor  0 = label(1열), 1..headers.length-1 = 일반, headers.length = +열
+ */
 function renderSheetHtml(tab) {
+  const rN = tab.rows.length;
+  const cN = tab.headers.length;
+
   let html = '<div class="sheet-view"><table>';
-  // 헤더
+  // 헤더 (클릭 가능한 셀로 취급)
   html += '<thead><tr>';
   tab.headers.forEach((h, i) => {
     const cls = i === 0 ? 'row-head' : '';
-    html += '<th class="' + cls + '">' + esc(h || ('col' + (i+1))) + '</th>';
+    html += '<th class="' + cls + '" data-row="-1" data-col="' + i + '">' + esc(h || ('col' + (i+1))) + '</th>';
   });
+  html += '<th class="add-col" data-row="-1" data-col="' + cN + '">＋ 열</th>';
   html += '</tr></thead><tbody>';
 
   tab.rows.forEach((r, rIdx) => {
@@ -965,12 +1016,21 @@ function renderSheetHtml(tab) {
       } else {
         const shown = v || '';
         html += '<td data-row="' + rIdx + '" data-col="' + cIdx + '" class="' + (shown ? '' : 'empty-cell') + '">';
-        html += esc(shown || '—');
-        html += '</td>';
+        html += esc(shown || '—') + '</td>';
       }
     });
+    html += '<td class="add-col" data-row="' + rIdx + '" data-col="' + cN + '">＋</td>';
     html += '</tr>';
   });
+
+  // +행 추가 행
+  html += '<tr class="add-row" data-row="' + rN + '">';
+  for (let c = 0; c < cN; c++) {
+    const cls = c === 0 ? 'row-head' : '';
+    html += '<td class="' + cls + '" data-row="' + rN + '" data-col="' + c + '">' + (c === 0 ? '＋ 행' : '') + '</td>';
+  }
+  html += '<td class="add-col" data-row="' + rN + '" data-col="' + cN + '">＋</td>';
+  html += '</tr>';
   html += '</tbody></table></div>';
   return html;
 }
@@ -979,53 +1039,256 @@ function applyCellCursor() {
   if (!currentView) return;
   const table = currentView.querySelector('.sheet-view table');
   if (!table) return;
-  table.querySelectorAll('td.active').forEach(el => el.classList.remove('active'));
-  table.querySelectorAll('td.active-row').forEach(el => el.classList.remove('active-row'));
-  const cell = table.querySelector('td[data-row="' + state.rowCursor + '"][data-col="' + state.colCursor + '"]');
-  if (cell) cell.classList.add('active');
-  const rowHead = table.querySelector('td.row-head[data-row="' + state.rowCursor + '"]');
-  if (rowHead && state.colCursor !== 0) rowHead.classList.add('active-row');
+  table.querySelectorAll('.active').forEach(el => el.classList.remove('active'));
+  table.querySelectorAll('.active-row').forEach(el => el.classList.remove('active-row'));
+
+  // 헤더 활성화
+  if (state.rowCursor === -1) {
+    const th = table.querySelector('th[data-col="' + state.colCursor + '"]');
+    if (th) th.classList.add('active');
+  } else {
+    const cell = table.querySelector('td[data-row="' + state.rowCursor + '"][data-col="' + state.colCursor + '"]');
+    if (cell) cell.classList.add('active');
+    const rowHead = table.querySelector('td.row-head[data-row="' + state.rowCursor + '"]');
+    if (rowHead && state.colCursor !== 0) rowHead.classList.add('active-row');
+  }
 }
 
 function scrollActiveIntoView() {
   if (!currentView) return;
-  const cell = currentView.querySelector('td.active');
+  const cell = currentView.querySelector('.active');
   if (cell) cell.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
 }
 
-// ====== 뷰: 편집 ======
-function goEditor() {
+// ====== 가운데 버튼: 크게 보기 ======
+function onCenterPress() {
   const tab = currentTab();
   if (!tab) return;
+
+  // 가상 셀 (+행/+열)은 가운데 누르면 추가 편집 열기
+  if (state.rowCursor === tab.rows.length) { openNewRowEditor(); return; }
+  if (state.colCursor === tab.headers.length) { openNewColEditor(); return; }
+
+  // 헤더행(-1)은 가운데 누르면 그냥 헤더 라벨 크게 표시
+  if (state.rowCursor === -1) {
+    showBigViewForHeader();
+    return;
+  }
+
+  showBigViewForCell();
+}
+
+function showBigViewForCell() {
+  const tab = currentTab();
   const row = tab.rows[state.rowCursor];
   if (!row) return;
   const colIdx = state.colCursor;
-  if (colIdx === 0) { toast('라벨은 편집할 수 없어요'); return; }
+  const type = tab.columnTypes[colIdx];
+  const header = tab.headers[colIdx] || ('col' + (colIdx + 1));
+  const val = row.cells[colIdx];
+  const label = row.cells[0] || '—';
+
+  const wasBigview = state.view === 'bigview';
+  state.view = 'bigview';
+  setTitle('보기');
+
+  let html = '<div class="bigview">';
+
+  if (type === 'image') {
+    // 이미지를 꽉 채움
+    if (val) {
+      html += '<img class="bv-img" src="' + val + '" alt=""/>';
+    } else {
+      html += '<div class="bv-empty">사진 없음</div>';
+    }
+  } else {
+    // 텍스트는 중앙에 크게
+    html += '<div class="bv-text-wrap">';
+    if (val) {
+      html += '<div class="bv-text">' + esc(val) + '</div>';
+    } else {
+      html += '<div class="bv-empty">(빈 값)</div>';
+    }
+    html += '</div>';
+  }
+
+  // 상단 오버레이: 행·열 정보
+  html += '<div class="bv-overlay-top">';
+  html += '<div class="bv-head">' + esc(label) + ' · ' + esc(header) + '</div>';
+  html += '</div>';
+
+  // 하단 오버레이: 조작 힌트
+  html += '<div class="bv-overlay-bottom">';
+  html += '<div class="bv-hint">휠/화살표: 다음 셀 · EDIT: 편집 · MENU: 닫기</div>';
+  html += '</div>';
+
+  html += '</div>';
+
+  if (wasBigview && currentView) {
+    currentView.innerHTML = html;
+  } else {
+    const v = createView(html);
+    transitionTo(v, 'forward');
+  }
+}
+
+function showBigViewForHeader() {
+  const tab = currentTab();
+  const colIdx = state.colCursor;
+  const header = tab.headers[colIdx] || '';
+  const type = tab.columnTypes[colIdx];
+  const options = tab.columnOptions?.[colIdx] || [];
+
+  const wasBigview = state.view === 'bigview';
+  state.view = 'bigview';
+  setTitle('열 정보');
+
+  let html = '<div class="bigview">';
+  html += '<div class="bv-header-info">';
+  html += '<div class="bh-sub">헤더 · ' + (colIdx + 1) + '열</div>';
+  html += '<div class="bh-title">' + esc(header) + '</div>';
+  html += '<div class="bh-sub">타입: ' + (type === 'image' ? '이미지' : (type === 'label' ? '라벨' : '텍스트')) + '</div>';
+  if (options.length) {
+    html += '<div class="bh-opts">옵션: ' + options.map(esc).join(', ') + '</div>';
+  }
+  html += '</div>';
+
+  html += '<div class="bv-overlay-bottom">';
+  html += '<div class="bv-hint">휠/화살표: 다음 · EDIT: 편집 · MENU: 닫기</div>';
+  html += '</div>';
+  html += '</div>';
+
+  if (wasBigview && currentView) {
+    currentView.innerHTML = html;
+  } else {
+    const v = createView(html);
+    transitionTo(v, 'forward');
+  }
+}
+
+// ====== EDIT 버튼: 편집 열기 ======
+function onEditPress() {
+  if (state.view === 'bigview') {
+    // 큰 보기에서 EDIT → 해당 셀/헤더 편집
+    if (state.rowCursor === -1) openHeaderEditor();
+    else openCellEditor();
+    return;
+  }
+  if (state.view === 'sheet') {
+    const tab = currentTab();
+    if (!tab) return;
+
+    // +행/+열은 가운데든 EDIT든 같은 동작
+    if (state.rowCursor === tab.rows.length) { openNewRowEditor(); return; }
+    if (state.colCursor === tab.headers.length) { openNewColEditor(); return; }
+
+    if (state.rowCursor === -1) {
+      // 헤더 → 열 편집
+      openHeaderEditor();
+    } else if (state.colCursor === 0) {
+      // 라벨 열 → 행 편집 (라벨 텍스트만 편집)
+      openLabelEditor();
+    } else {
+      // 일반 셀 → 셀 편집
+      openCellEditor();
+    }
+    return;
+  }
+  if (state.view === 'tabs') {
+    toast('시트를 선택하세요');
+  }
+}
+
+// ====== 편집기: 셀 ======
+function openCellEditor() {
+  const tab = currentTab();
+  const row = tab.rows[state.rowCursor];
+  if (!row) return;
+  const colIdx = state.colCursor;
   const type = tab.columnTypes[colIdx];
 
   state.view = 'editor';
   state.editor = {
+    kind: 'cell',
+    colIdx,
+    type,
     value: type === 'image' ? '' : (row.cells[colIdx] || ''),
     image: type === 'image' ? (row.cells[colIdx] || '') : ''
   };
+  setTitle('셀 편집');
+  renderEditor();
+}
 
-  setTitle('편집');
+// ====== 편집기: 라벨(행) ======
+function openLabelEditor() {
+  const tab = currentTab();
+  const row = tab.rows[state.rowCursor];
+  if (!row) return;
+  state.view = 'editor';
+  state.editor = { kind: 'label', value: row.cells[0] || '' };
+  setTitle('행 편집');
+  renderEditor();
+}
+
+// ====== 편집기: 헤더(열) ======
+function openHeaderEditor() {
+  const tab = currentTab();
+  const colIdx = state.colCursor;
+  if (colIdx === 0) { toast('라벨 열은 이름만 고정'); return; }
+  const header = tab.headers[colIdx];
+  const type = tab.columnTypes[colIdx];
+  const options = tab.columnOptions?.[colIdx] || [];
+
+  state.view = 'editor';
+  state.editor = {
+    kind: 'header',
+    colIdx,
+    header,
+    type,
+    optionsStr: options.join(', ')
+  };
+  setTitle('열 편집');
+  renderEditor();
+}
+
+// ====== 편집기: 새 행 ======
+function openNewRowEditor() {
+  state.view = 'editor';
+  state.editor = { kind: 'newRow', label: '' };
+  setTitle('새 행 추가');
+  renderEditor();
+}
+
+// ====== 편집기: 새 열 ======
+function openNewColEditor() {
+  state.view = 'editor';
+  state.editor = { kind: 'newCol', header: '', type: 'text', optionsStr: '' };
+  setTitle('새 열 추가');
   renderEditor();
 }
 
 function renderEditor() {
+  const ed = state.editor;
+  if (!ed) return;
+  if (ed.kind === 'cell')    return renderCellEditor();
+  if (ed.kind === 'label')   return renderLabelEditor();
+  if (ed.kind === 'header')  return renderHeaderEditor();
+  if (ed.kind === 'newRow')  return renderNewRowEditor();
+  if (ed.kind === 'newCol')  return renderNewColEditor();
+}
+
+function renderCellEditor() {
   const tab = currentTab();
   const row = tab.rows[state.rowCursor];
-  const colIdx = state.colCursor;
-  const header = tab.headers[colIdx] || ('col' + (colIdx + 1));
-  const type = tab.columnTypes[colIdx];
-  const options = tab.columnOptions?.[colIdx] || [];
   const ed = state.editor;
+  const colIdx = ed.colIdx;
+  const header = tab.headers[colIdx] || '';
+  const type = ed.type;
+  const options = tab.columnOptions?.[colIdx] || [];
 
   let html = '<div class="editor">';
   html += '<div class="ed-label">행</div>';
   html += '<div class="ed-rowname">' + esc(row.cells[0] || '—') + '</div>';
-
   html += '<div class="ed-field">';
   html += '<span>' + esc(header) + '</span>';
   html += '<span class="badge">' + (type === 'image' ? '이미지' : (options.length ? '옵션+텍스트' : '텍스트')) + '</span>';
@@ -1033,11 +1296,8 @@ function renderEditor() {
 
   if (type === 'image') {
     html += '<div class="img-block">';
-    if (ed.image) {
-      html += '<img src="' + ed.image + '" alt=""/>';
-    } else {
-      html += '<div style="color:#999;font-size:13px;padding:20px 0;">사진 없음</div>';
-    }
+    if (ed.image) html += '<img src="' + ed.image + '" alt=""/>';
+    else html += '<div style="color:#999;font-size:13px;padding:20px 0;">사진 없음</div>';
     html += '<div class="btns">';
     html += '<label>' + (ed.image ? '교체' : '사진 추가') + '<input type="file" id="edImgPicker" accept="image/*"/></label>';
     if (ed.image) html += '<button class="del" id="edImgDel">삭제</button>';
@@ -1051,47 +1311,35 @@ function renderEditor() {
       });
       html += '</div>';
     }
-    html += '<textarea class="ed-input" id="edText" rows="3" placeholder="직접 입력하거나 위 옵션 선택">' + esc(ed.value) + '</textarea>';
+    html += '<textarea class="ed-input" id="edText" rows="3" placeholder="직접 입력하거나 옵션 선택">' + esc(ed.value) + '</textarea>';
 
 }
 
 html += ‘<div class="editor-actions">’;
 html += ‘<button class="cancel" id="edCancel">취소</button>’;
 html += ‘<button class="save" id="edSave">저장</button>’;
-html += ‘</div>’;
-html += ‘</div>’;
+html += ‘</div></div>’;
 
 const v = createView(html);
 transitionTo(v, ‘forward’);
-setTimeout(bindEditorEvents, ANIM_DUR + 20);
+setTimeout(bindCellEditorEvents, ANIM_DUR + 20);
 }
 
-function bindEditorEvents() {
-const v = currentView;
-if (!v) return;
-
+function bindCellEditorEvents() {
+const v = currentView; if (!v) return;
 const textInput = v.querySelector(’#edText’);
 const optsDiv = v.querySelector(’#edOptions’);
 const imgPicker = v.querySelector(’#edImgPicker’);
 const imgDel = v.querySelector(’#edImgDel’);
-const cancelBtn = v.querySelector(’#edCancel’);
-const saveBtn = v.querySelector(’#edSave’);
-
-if (textInput) {
-textInput.addEventListener(‘input’, () => { state.editor.value = textInput.value; updateOptionSelection(); });
-}
-if (optsDiv) {
-optsDiv.addEventListener(‘click’, (e) => {
+if (textInput) textInput.addEventListener(‘input’, () => { state.editor.value = textInput.value; updateOptionSelection(); });
+if (optsDiv) optsDiv.addEventListener(‘click’, (e) => {
 const b = e.target.closest(’.opt’);
 if (!b) return;
-const val = b.dataset.opt;
-state.editor.value = val;
-if (textInput) textInput.value = val;
+state.editor.value = b.dataset.opt;
+if (textInput) textInput.value = state.editor.value;
 updateOptionSelection();
 });
-}
-if (imgPicker) {
-imgPicker.addEventListener(‘change’, async (e) => {
+if (imgPicker) imgPicker.addEventListener(‘change’, async (e) => {
 const file = e.target.files?.[0];
 if (!file) return;
 try {
@@ -1101,15 +1349,9 @@ state.editor.image = resized;
 renderEditor();
 } catch(err) { toast(‘이미지 처리 실패’); }
 });
-}
-if (imgDel) {
-imgDel.addEventListener(‘click’, () => {
-state.editor.image = ‘’;
-renderEditor();
-});
-}
-if (cancelBtn) cancelBtn.addEventListener(‘click’, editorCancel);
-if (saveBtn)   saveBtn.addEventListener(‘click’, editorSave);
+if (imgDel) imgDel.addEventListener(‘click’, () => { state.editor.image = ‘’; renderEditor(); });
+v.querySelector(’#edCancel’).addEventListener(‘click’, editorCancel);
+v.querySelector(’#edSave’).addEventListener(‘click’, saveCellEdit);
 }
 
 function updateOptionSelection() {
@@ -1118,29 +1360,341 @@ const btns = currentView.querySelectorAll(’.opt’);
 btns.forEach(b => b.classList.toggle(‘selected’, b.dataset.opt === state.editor.value));
 }
 
-function editorCancel() {
-state.editor = null;
-goSheet(state.currentTabIdx, ‘backward’);
-}
-
-function editorSave() {
+function saveCellEdit() {
 const tab = currentTab();
 const row = tab.rows[state.rowCursor];
-const colIdx = state.colCursor;
-const type = tab.columnTypes[colIdx];
 const ed = state.editor;
-
-const newVal = type === ‘image’ ? ed.image : ed.value;
-if (row.cells[colIdx] !== newVal) {
-row.cells[colIdx] = newVal;
+const newVal = ed.type === ‘image’ ? ed.image : ed.value;
+if (row.cells[ed.colIdx] !== newVal) {
+row.cells[ed.colIdx] = newVal;
 markDirty();
 }
 state.editor = null;
-toast(‘값 설정됨’);
+toast(‘저장됨’);
+goSheet(state.currentTabIdx, ‘backward’);
+}
+
+// ====== 편집기: 라벨(행) 렌더 ======
+function renderLabelEditor() {
+const tab = currentTab();
+const row = tab.rows[state.rowCursor];
+const ed = state.editor;
+
+let html = ‘<div class="editor">’;
+html += ‘<div class="ed-label">행 정보 (1열)</div>’;
+html += ‘<div class="ed-rowname">’ + esc(row.cells[0] || ‘—’) + ‘</div>’;
+html += ‘<div class="ed-field">라벨</div>’;
+html += ‘<input type="text" class="ed-input" id="edText" placeholder="라벨" value="' + esc(ed.value) + '"/>’;
+
+html += ‘<div class="danger-zone">’;
+html += ‘<button id="delRow">이 행 삭제</button>’;
+html += ‘</div>’;
+
+html += ‘<div class="editor-actions">’;
+html += ‘<button class="cancel" id="edCancel">취소</button>’;
+html += ‘<button class="save" id="edSave">저장</button>’;
+html += ‘</div></div>’;
+
+const v = createView(html);
+transitionTo(v, ‘forward’);
+setTimeout(() => {
+const input = v.querySelector(’#edText’);
+if (input) {
+input.addEventListener(‘input’, () => state.editor.value = input.value);
+setTimeout(() => input.focus(), 100);
+}
+v.querySelector(’#edCancel’).addEventListener(‘click’, editorCancel);
+v.querySelector(’#edSave’).addEventListener(‘click’, saveLabelEdit);
+v.querySelector(’#delRow’).addEventListener(‘click’, deleteCurrentRow);
+}, ANIM_DUR + 20);
+}
+
+function saveLabelEdit() {
+const tab = currentTab();
+const row = tab.rows[state.rowCursor];
+const newLabel = (state.editor.value || ‘’).trim();
+if (!newLabel) { toast(‘라벨은 비울 수 없어요’); return; }
+if (row.cells[0] !== newLabel) {
+row.cells[0] = newLabel;
+markDirty();
+}
+state.editor = null;
+toast(‘저장됨’);
+goSheet(state.currentTabIdx, ‘backward’);
+}
+
+function deleteCurrentRow() {
+const tab = currentTab();
+const row = tab.rows[state.rowCursor];
+if (!row) return;
+if (!confirm(‘이 행을 삭제할까요?\n’ + (row.cells[0] || ‘(라벨 없음)’))) return;
+tab.rows.splice(state.rowCursor, 1);
+if (state.rowCursor >= tab.rows.length) state.rowCursor = Math.max(0, tab.rows.length - 1);
+markDirty();
+state.editor = null;
+toast(‘행 삭제됨’);
+goSheet(state.currentTabIdx, ‘backward’);
+}
+
+// ====== 편집기: 헤더(열) 렌더 ======
+function renderHeaderEditor() {
+const ed = state.editor;
+
+let html = ‘<div class="editor">’;
+html += ‘<div class="ed-label">열 정보 (’ + (ed.colIdx + 1) + ‘열)</div>’;
+html += ‘<div class="ed-rowname">’ + esc(ed.header) + ‘</div>’;
+
+html += ‘<div class="ed-field">헤더명</div>’;
+html += ‘<input type="text" class="ed-input" id="edHeader" value="' + esc(ed.header) + '"/>’;
+
+html += ‘<div class="ed-field" style="margin-top:14px;">타입</div>’;
+html += ‘<div class="options-row" id="edType">’;
+html += ‘<button class="opt ' + (ed.type === 'text' ? 'selected' : '') + '" data-val="text">텍스트</button>’;
+html += ‘<button class="opt ' + (ed.type === 'image' ? 'selected' : '') + '" data-val="image">이미지</button>’;
+html += ‘</div>’;
+
+html += ‘<div id="optionsField" style="display:' + (ed.type === 'text' ? 'block' : 'none') + ';">’;
+html += ‘<div class="ed-field">옵션 (콤마로 구분, 비우면 자유입력)</div>’;
+html += ‘<input type="text" class="ed-input" id="edOpts" placeholder="예: 청소완료, 점검필요, 공실" value="' + esc(ed.optionsStr) + '"/>’;
+html += ‘</div>’;
+
+html += ‘<div class="danger-zone">’;
+html += ‘<button id="delCol">이 열 삭제</button>’;
+html += ‘</div>’;
+
+html += ‘<div class="editor-actions">’;
+html += ‘<button class="cancel" id="edCancel">취소</button>’;
+html += ‘<button class="save" id="edSave">저장</button>’;
+html += ‘</div></div>’;
+
+const v = createView(html);
+transitionTo(v, ‘forward’);
+setTimeout(() => {
+const headerInput = v.querySelector(’#edHeader’);
+const optsInput   = v.querySelector(’#edOpts’);
+const typeDiv     = v.querySelector(’#edType’);
+const optField    = v.querySelector(’#optionsField’);
+
+```
+if (headerInput) headerInput.addEventListener('input', () => {
+  state.editor.header = headerInput.value;
+  if (IMG_HEADER_PATTERN.test(headerInput.value)) {
+    state.editor.type = 'image';
+    typeDiv.querySelectorAll('.opt').forEach(b => b.classList.toggle('selected', b.dataset.val === 'image'));
+    optField.style.display = 'none';
+  }
+});
+if (optsInput) optsInput.addEventListener('input', () => state.editor.optionsStr = optsInput.value);
+if (typeDiv) typeDiv.addEventListener('click', (e) => {
+  const b = e.target.closest('.opt');
+  if (!b) return;
+  state.editor.type = b.dataset.val;
+  typeDiv.querySelectorAll('.opt').forEach(x => x.classList.toggle('selected', x === b));
+  optField.style.display = state.editor.type === 'text' ? 'block' : 'none';
+});
+
+v.querySelector('#edCancel').addEventListener('click', editorCancel);
+v.querySelector('#edSave').addEventListener('click', saveHeaderEdit);
+v.querySelector('#delCol').addEventListener('click', deleteCurrentCol);
+```
+
+}, ANIM_DUR + 20);
+}
+
+function saveHeaderEdit() {
+const tab = currentTab();
+const ed = state.editor;
+const newHeader = (ed.header || ‘’).trim();
+if (!newHeader) { toast(‘헤더명을 입력하세요’); return; }
+// 같은 이름 중복 체크 (자기 자신 제외)
+if (tab.headers.some((h, i) => i !== ed.colIdx && h === newHeader)) {
+toast(‘같은 이름의 열이 이미 있어요’); return;
+}
+
+const oldHeader = tab.headers[ed.colIdx];
+const newType = IMG_HEADER_PATTERN.test(newHeader) ? ‘image’ : ed.type;
+
+tab.headers[ed.colIdx] = newHeader;
+// 타입이 바뀌면 해당 컬럼 값 초기화 (안전)
+if (tab.columnTypes[ed.colIdx] !== newType) {
+tab.rows.forEach(r => { r.cells[ed.colIdx] = ‘’; });
+}
+tab.columnTypes[ed.colIdx] = newType;
+
+// 옵션
+if (newType === ‘text’) {
+const opts = (ed.optionsStr || ‘’).split(’,’).map(s => s.trim()).filter(s => s !== ‘’);
+if (opts.length) tab.columnOptions[ed.colIdx] = opts;
+else delete tab.columnOptions[ed.colIdx];
+} else {
+delete tab.columnOptions[ed.colIdx];
+}
+
+markDirty();
+state.editor = null;
+toast(‘열 저장됨’);
+goSheet(state.currentTabIdx, ‘backward’);
+}
+
+function deleteCurrentCol() {
+const tab = currentTab();
+const colIdx = state.editor.colIdx;
+if (colIdx === 0) { toast(‘라벨 열은 삭제 불가’); return; }
+const header = tab.headers[colIdx];
+if (!confirm(‘이 열 “’ + header + ‘“을(를) 삭제할까요?\n해당 열의 모든 데이터가 지워집니다.’)) return;
+
+tab.headers.splice(colIdx, 1);
+tab.columnTypes.splice(colIdx, 1);
+
+const newOpts = {};
+Object.keys(tab.columnOptions).forEach(k => {
+const n = Number(k);
+if (n < colIdx) newOpts[n] = tab.columnOptions[n];
+else if (n > colIdx) newOpts[n - 1] = tab.columnOptions[n];
+});
+tab.columnOptions = newOpts;
+
+tab.rows.forEach(r => r.cells.splice(colIdx, 1));
+if (state.colCursor >= tab.headers.length) state.colCursor = tab.headers.length - 1;
+if (state.colCursor < 0) state.colCursor = 0;
+
+markDirty();
+state.editor = null;
+toast(‘열 삭제됨’);
+goSheet(state.currentTabIdx, ‘backward’);
+}
+
+// ====== 편집기: 새 행 ======
+function renderNewRowEditor() {
+const ed = state.editor;
+let html = ‘<div class="editor">’;
+html += ‘<div class="ed-label">새 행</div>’;
+html += ‘<div class="ed-rowname">행 추가</div>’;
+html += ‘<div class="ed-field">라벨 (1열)</div>’;
+html += ‘<input type="text" class="ed-input" id="edText" placeholder="예: 204호" value="' + esc(ed.label) + '"/>’;
+html += ‘<div style="color:#666;font-size:12px;margin-top:8px;">나머지 값은 행 생성 후 셀을 편집해서 채우세요.</div>’;
+html += ‘<div class="editor-actions">’;
+html += ‘<button class="cancel" id="edCancel">취소</button>’;
+html += ‘<button class="save" id="edSave">추가</button>’;
+html += ‘</div></div>’;
+
+const v = createView(html);
+transitionTo(v, ‘forward’);
+setTimeout(() => {
+const input = v.querySelector(’#edText’);
+if (input) {
+input.addEventListener(‘input’, () => state.editor.label = input.value);
+setTimeout(() => input.focus(), 100);
+}
+v.querySelector(’#edCancel’).addEventListener(‘click’, editorCancel);
+v.querySelector(’#edSave’).addEventListener(‘click’, saveNewRow);
+}, ANIM_DUR + 20);
+}
+
+function saveNewRow() {
+const tab = currentTab();
+const label = (state.editor.label || ‘’).trim();
+if (!label) { toast(‘라벨을 입력하세요’); return; }
+const cells = tab.headers.map(() => ‘’);
+cells[0] = label;
+tab.rows.push({ cells });
+state.rowCursor = tab.rows.length - 1;
+state.colCursor = Math.min(1, tab.headers.length - 1);
+markDirty();
+state.editor = null;
+toast(‘행 추가됨’);
+goSheet(state.currentTabIdx, ‘backward’);
+}
+
+// ====== 편집기: 새 열 ======
+function renderNewColEditor() {
+const ed = state.editor;
+let html = ‘<div class="editor">’;
+html += ‘<div class="ed-label">새 열</div>’;
+html += ‘<div class="ed-rowname">열 추가</div>’;
+
+html += ‘<div class="ed-field">헤더명</div>’;
+html += ‘<input type="text" class="ed-input" id="edHeader" placeholder="예: 상태, 메모, 사진" value="' + esc(ed.header) + '"/>’;
+html += ‘<div style="color:#666;font-size:11px;margin-top:4px;">“사진”, “image”, “photo” 포함 → 이미지 열 자동</div>’;
+
+html += ‘<div class="ed-field" style="margin-top:14px;">타입</div>’;
+html += ‘<div class="options-row" id="edType">’;
+html += ‘<button class="opt ' + (ed.type === 'text' ? 'selected' : '') + '" data-val="text">텍스트</button>’;
+html += ‘<button class="opt ' + (ed.type === 'image' ? 'selected' : '') + '" data-val="image">이미지</button>’;
+html += ‘</div>’;
+
+html += ‘<div id="optionsField" style="display:' + (ed.type === 'text' ? 'block' : 'none') + ';">’;
+html += ‘<div class="ed-field">옵션 (콤마로 구분, 비우면 자유입력)</div>’;
+html += ‘<input type="text" class="ed-input" id="edOpts" placeholder="예: 청소완료, 점검필요, 공실" value="' + esc(ed.optionsStr) + '"/>’;
+html += ‘</div>’;
+
+html += ‘<div class="editor-actions">’;
+html += ‘<button class="cancel" id="edCancel">취소</button>’;
+html += ‘<button class="save" id="edSave">추가</button>’;
+html += ‘</div></div>’;
+
+const v = createView(html);
+transitionTo(v, ‘forward’);
+setTimeout(() => {
+const headerInput = v.querySelector(’#edHeader’);
+const optsInput   = v.querySelector(’#edOpts’);
+const typeDiv     = v.querySelector(’#edType’);
+const optField    = v.querySelector(’#optionsField’);
+
+```
+if (headerInput) {
+  headerInput.addEventListener('input', () => {
+    state.editor.header = headerInput.value;
+    if (IMG_HEADER_PATTERN.test(headerInput.value)) {
+      state.editor.type = 'image';
+      typeDiv.querySelectorAll('.opt').forEach(b => b.classList.toggle('selected', b.dataset.val === 'image'));
+      optField.style.display = 'none';
+    }
+  });
+  setTimeout(() => headerInput.focus(), 100);
+}
+if (optsInput) optsInput.addEventListener('input', () => state.editor.optionsStr = optsInput.value);
+if (typeDiv) typeDiv.addEventListener('click', (e) => {
+  const b = e.target.closest('.opt');
+  if (!b) return;
+  state.editor.type = b.dataset.val;
+  typeDiv.querySelectorAll('.opt').forEach(x => x.classList.toggle('selected', x === b));
+  optField.style.display = state.editor.type === 'text' ? 'block' : 'none';
+});
+v.querySelector('#edCancel').addEventListener('click', editorCancel);
+v.querySelector('#edSave').addEventListener('click', saveNewCol);
+```
+
+}, ANIM_DUR + 20);
+}
+
+function saveNewCol() {
+const tab = currentTab();
+const ed = state.editor;
+const header = (ed.header || ‘’).trim();
+if (!header) { toast(‘헤더명을 입력하세요’); return; }
+if (tab.headers.includes(header)) { toast(‘같은 이름의 열이 이미 있어요’); return; }
+
+const type = IMG_HEADER_PATTERN.test(header) ? ‘image’ : ed.type;
+tab.headers.push(header);
+tab.columnTypes.push(type);
+tab.rows.forEach(r => r.cells.push(’’));
+if (type === ‘text’ && ed.optionsStr) {
+const opts = ed.optionsStr.split(’,’).map(s => s.trim()).filter(s => s !== ‘’);
+if (opts.length) tab.columnOptions[tab.headers.length - 1] = opts;
+}
+state.colCursor = tab.headers.length - 1;
+markDirty();
+state.editor = null;
+toast(‘열 추가됨’);
 goSheet(state.currentTabIdx, ‘backward’);
 }
 
 // ====== 공통 ======
+function editorCancel() {
+state.editor = null;
+goSheet(state.currentTabIdx, ‘backward’);
+}
 function showEmptyView(msg, direction) {
 const v = createView(’<div class="empty">’ + msg + ‘</div>’);
 transitionTo(v, direction);
@@ -1170,7 +1724,6 @@ function esc(s) {
 return String(s == null ? ‘’ : s).replace(/[&<>”’]/g, c =>
 ({’&’:’&’,’<’:’<’,’>’:’>’,’”’:’"’,”’”:’'’}[c]));
 }
-
 let toastTimer;
 function toast(msg) {
 toastEl.textContent = msg;
@@ -1179,7 +1732,7 @@ clearTimeout(toastTimer);
 toastTimer = setTimeout(() => toastEl.classList.remove(‘show’), 2000);
 }
 
-// ====== 휠 이벤트 ======
+// ====== 이동 ======
 function moveRow(delta) {
 if (state.view === ‘tabs’) {
 const max = (workbook?.tabs.length || 0) - 1;
@@ -1188,26 +1741,49 @@ applyListCursor();
 } else if (state.view === ‘sheet’) {
 const tab = currentTab();
 if (!tab) return;
-const max = tab.rows.length - 1;
-state.rowCursor = Math.max(0, Math.min(max, state.rowCursor + delta));
-applyCellCursor();
-scrollActiveIntoView();
-}
-}
-
-function moveCol(delta) {
-if (state.view !== ‘sheet’) return;
+const min = -1;  // 헤더
+const max = tab.rows.length;  // +행
+state.rowCursor = Math.max(min, Math.min(max, state.rowCursor + delta));
+applyCellCursor(); scrollActiveIntoView();
+} else if (state.view === ‘bigview’) {
+// 크게 보기 상태에서도 이동 → 이동 후 크게 보기 갱신
 const tab = currentTab();
 if (!tab) return;
+// +행은 건너뛰기 (크게 볼 내용 없음)
+const max = tab.rows.length - 1;
+const min = -1;  // 헤더 포함
+let next = state.rowCursor + delta;
+if (next < min) next = min;
+if (next > max) next = max;
+if (next === state.rowCursor) return;
+state.rowCursor = next;
+refreshBigView();
+}
+}
+function moveCol(delta) {
+if (state.view === ‘sheet’) {
+const tab = currentTab();
+if (!tab) return;
+const max = tab.headers.length;  // +열
+state.colCursor = Math.max(0, Math.min(max, state.colCursor + delta));
+applyCellCursor(); scrollActiveIntoView();
+} else if (state.view === ‘bigview’) {
+const tab = currentTab();
+if (!tab) return;
+// +열은 건너뛰기
 const max = tab.headers.length - 1;
 let next = state.colCursor + delta;
-// 0번(label)은 건너뛰기
-if (next <= 0) next = 1;
+if (next < 0) next = 0;
 if (next > max) next = max;
 if (next === state.colCursor) return;
 state.colCursor = next;
-applyCellCursor();
-scrollActiveIntoView();
+refreshBigView();
+}
+}
+
+function refreshBigView() {
+if (state.rowCursor === -1) showBigViewForHeader();
+else showBigViewForCell();
 }
 
 let dragging = false, lastAngle = 0, accumAngle = 0;
@@ -1220,7 +1796,7 @@ e.clientX - (r.left + r.width/2)) * 180 / Math.PI;
 }
 
 wheel.addEventListener(‘pointerdown’, (e) => {
-if (e.target.closest(’.center-btn’) || e.target.closest(’.tag’)) return;
+if (e.target.closest(’.center-btn’) || e.target.closest(’.arrow’)) return;
 dragging = true;
 wheel.classList.add(‘dragging’);
 wheel.setPointerCapture(e.pointerId);
@@ -1241,12 +1817,7 @@ rotateDisk(d);
 while (accumAngle >= DEG_PER_ITEM)  { moveRow(1);  accumAngle -= DEG_PER_ITEM; tickFeedback(); }
 while (accumAngle <= -DEG_PER_ITEM) { moveRow(-1); accumAngle += DEG_PER_ITEM; tickFeedback(); }
 });
-function endDrag() {
-if (!dragging) return;
-dragging = false;
-wheel.classList.remove(‘dragging’);
-accumAngle = 0;
-}
+function endDrag() { if (!dragging) return; dragging = false; wheel.classList.remove(‘dragging’); accumAngle = 0; }
 wheel.addEventListener(‘pointerup’, endDrag);
 wheel.addEventListener(‘pointercancel’, endDrag);
 wheel.addEventListener(‘wheel’, (e) => {
@@ -1257,36 +1828,30 @@ tickFeedback();
 }, { passive: false });
 
 // ====== 버튼 ======
+function handleMenu() {
+if (document.getElementById(‘dlModal’).classList.contains(‘show’)) return closeDownload();
+if (state.view === ‘editor’)       editorCancel();
+else if (state.view === ‘bigview’) goSheet(state.currentTabIdx, ‘backward’);
+else if (state.view === ‘sheet’)   goTabs();
+else if (state.view === ‘tabs’)    showStart();
+}
 function handleCenter() {
 ensureAudio();
 if (state.view === ‘tabs’)       goSheet(state.rowCursor);
-else if (state.view === ‘sheet’) goEditor();
-// editor에선 SAVE/CANCEL 버튼이 따로 있어서 무반응
-}
-function handleMenu() {
-if (document.getElementById(‘dlModal’).classList.contains(‘show’)) return closeDownload();
-if (state.view === ‘editor’)     editorCancel();
-else if (state.view === ‘sheet’) goTabs();
-else if (state.view === ‘tabs’)  showStart();
+else if (state.view === ‘sheet’) onCenterPress();
+else if (state.view === ‘bigview’) goSheet(state.currentTabIdx, ‘backward’); // 한번 더 누르면 닫힘
 }
 
 document.getElementById(‘btnMenu’).addEventListener(‘click’, handleMenu);
+document.getElementById(‘btnEdit’).addEventListener(‘click’, onEditPress);
 document.getElementById(‘centerBtn’).addEventListener(‘click’, handleCenter);
-document.getElementById(‘btnPlay’).addEventListener(‘click’, handleCenter);
-document.getElementById(‘btnPrev’).addEventListener(‘click’, () => {
-if (state.view === ‘sheet’) { moveCol(-1); tickFeedback(); }
-else                        { moveRow(-1); tickFeedback(); }
-});
-document.getElementById(‘btnNext’).addEventListener(‘click’, () => {
-if (state.view === ‘sheet’) { moveCol(1);  tickFeedback(); }
-else                        { moveRow(1);  tickFeedback(); }
-});
+document.getElementById(‘btnUp’).addEventListener(‘click’, () => { moveRow(-1); tickFeedback(); });
+document.getElementById(‘btnDown’).addEventListener(‘click’, () => { moveRow(1); tickFeedback(); });
+document.getElementById(‘btnLeft’).addEventListener(‘click’, () => { moveCol(-1); tickFeedback(); });
+document.getElementById(‘btnRight’).addEventListener(‘click’, () => { moveCol(1); tickFeedback(); });
 document.getElementById(‘btnSave’).addEventListener(‘click’, () => {
 if (!workbook) return;
-saveLocal();
-dirty = false;
-updateDirty();
-toast(‘저장됨’);
+saveLocal(); dirty = false; updateDirty(); toast(‘저장됨’);
 });
 document.getElementById(‘btnExport’).addEventListener(‘click’, buildAndExport);
 
@@ -1294,20 +1859,17 @@ document.addEventListener(‘change’, (e) => {
 if (e.target?.id === ‘openFile’) onFileOpen(e);
 });
 document.addEventListener(‘keydown’, (e) => {
-// 편집 화면에서 텍스트 입력 중이면 단축키 건너뛰기
 const isTyping = e.target.tagName === ‘TEXTAREA’ || e.target.tagName === ‘INPUT’;
 if (isTyping) return;
-
 if (e.key === ‘ArrowDown’)       { moveRow(1);  tickFeedback(); }
 else if (e.key === ‘ArrowUp’)    { moveRow(-1); tickFeedback(); }
 else if (e.key === ‘ArrowLeft’)  { moveCol(-1); tickFeedback(); }
 else if (e.key === ‘ArrowRight’) { moveCol(1);  tickFeedback(); }
 else if (e.key === ‘Enter’)      handleCenter();
+else if (e.key === ‘e’ || e.key === ‘E’) onEditPress();
 else if (e.key === ‘Escape’ || e.key === ‘Backspace’) handleMenu();
 else if ((e.ctrlKey || e.metaKey) && e.key === ‘s’) { e.preventDefault(); document.getElementById(‘btnSave’).click(); }
-else if ((e.ctrlKey || e.metaKey) && e.key === ‘e’) { e.preventDefault(); buildAndExport(); }
 });
-
 window.addEventListener(‘beforeunload’, (e) => { if (dirty) { e.preventDefault(); e.returnValue = ‘’; } });
 
 start();
