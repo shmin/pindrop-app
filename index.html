@@ -3,7 +3,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <title>iPod × Local Excel</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -14,140 +14,181 @@
     --screen-2: #b9c3ac;
     --wheel-edge: #b9b4a8;
     --bar: linear-gradient(180deg, #4a77c9, #2e55a8);
+    --anim-dur: 280ms;
+    --anim-ease: cubic-bezier(.22,.8,.25,1);
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
   body {
     background:
       radial-gradient(1000px 700px at 50% 20%, #e7e3d8 0%, transparent 60%),
       var(--bg);
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     color: #1a1a1a;
-    display: grid; place-items: center;
-    overflow: hidden; user-select: none;
+    user-select: none;
     -webkit-tap-highlight-color: transparent;
+    /* iOS safe area 대응 */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right)
+             env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
-  .ipod {
-    width: min(92vmin, 360px);
-    aspect-ratio: 360 / 620;
-    background: linear-gradient(180deg, #fbf9f4 0%, #eae6dc 100%);
-    border-radius: 34px;
-    padding: 22px 22px 28px;
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.9),
-      inset 0 -2px 0 rgba(0,0,0,.06),
-      0 30px 60px rgba(30,30,30,.25),
-      0 0 0 1px var(--body-edge);
-    display: flex; flex-direction: column;
-  }
-  .screen {
-    aspect-ratio: 4/3;
-    border-radius: 6px;
-    background: linear-gradient(180deg, var(--screen) 0%, var(--screen-2) 100%);
-    box-shadow:
-      inset 0 2px 6px rgba(0,0,0,.25),
-      inset 0 -1px 0 rgba(255,255,255,.3),
-      0 0 0 6px #1a1a1a, 0 0 0 7px #3a3a3a;
-    overflow: hidden; position: relative;
-  }
-  .titlebar {
-    height: 22px; background: var(--bar); color: #fff;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0 8px; font-size: 12px; font-weight: 700; position: relative;
-  }
-  .titlebar::before {
-    content: ""; position: absolute; inset: 0 0 auto 0; height: 45%;
-    background: linear-gradient(180deg, rgba(255,255,255,.35), rgba(255,255,255,0));
-  }
-  .dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: #ff9d5a; box-shadow: 0 0 6px rgba(255,200,120,.7);
-  }
-  .dot.clean { background: #a0e878; box-shadow: 0 0 6px rgba(160,230,120,.6); }
 
-.list { position: absolute; top: 22px; bottom: 0; left: 0; right: 0; overflow: hidden; }
+/* ── iPod 전체 레이아웃: 화면 꽉 차게 ── */
+.ipod {
+width: 100%;
+height: 100%;
+display: flex; flex-direction: column;
+align-items: stretch;
+padding: 12px 10px 10px;
+gap: 8px;
+}
+
+.ipod-body {
+flex: 1;
+background: linear-gradient(180deg, #fbf9f4 0%, #eae6dc 100%);
+border-radius: 28px;
+padding: 14px 14px 10px;
+box-shadow:
+inset 0 1px 0 rgba(255,255,255,.9),
+inset 0 -2px 0 rgba(0,0,0,.06),
+0 12px 30px rgba(30,30,30,.2),
+0 0 0 1px var(–body-edge);
+display: flex; flex-direction: column;
+min-height: 0;
+}
+
+/* ── 스크린: flex 1, 휠은 작게 ── */
+.screen {
+flex: 1;
+min-height: 0;
+border-radius: 6px;
+background: linear-gradient(180deg, var(–screen) 0%, var(–screen-2) 100%);
+box-shadow:
+inset 0 2px 6px rgba(0,0,0,.25),
+inset 0 -1px 0 rgba(255,255,255,.3),
+0 0 0 4px #1a1a1a, 0 0 0 5px #3a3a3a;
+overflow: hidden;
+position: relative;
+}
+
+.titlebar {
+height: 26px; background: var(–bar); color: #fff;
+display: flex; align-items: center; justify-content: center;
+padding: 0 10px; font-size: 13px; font-weight: 700; position: relative;
+text-align: center;
+}
+.titlebar::before {
+content: “”; position: absolute; inset: 0 0 auto 0; height: 45%;
+background: linear-gradient(180deg, rgba(255,255,255,.35), rgba(255,255,255,0));
+}
+.titlebar .t-text { position: relative; z-index: 1; }
+
+/* ── 뷰 스택 (슬라이드 애니메이션) ── */
+.view-stack {
+position: absolute;
+top: 26px; bottom: 0; left: 0; right: 0;
+overflow: hidden;
+}
+.view {
+position: absolute; inset: 0;
+background: linear-gradient(180deg, var(–screen) 0%, var(–screen-2) 100%);
+overflow: hidden;
+transition: transform var(–anim-dur) var(–anim-ease);
+will-change: transform;
+}
+.view.slide-in-right  { transform: translateX(100%); }
+.view.slide-in-left   { transform: translateX(-100%); }
+.view.slide-out-left  { transform: translateX(-100%); }
+.view.slide-out-right { transform: translateX(100%); }
+.view.show            { transform: translateX(0); }
+
+/* ── 리스트 ── */
+.list { position: absolute; inset: 0; overflow: hidden; }
 .list ul { list-style: none; margin: 0; padding: 0; transition: transform .18s cubic-bezier(.2,.8,.2,1); }
 .list li {
-padding: 4px 8px;
-font-size: 13px; line-height: 1.2;
+padding: 6px 12px;
+font-size: 15px; line-height: 1.2;
 border-bottom: 1px solid rgba(0,0,0,.06);
-display: flex; align-items: center; gap: 8px;
-min-height: 36px;
+display: flex; align-items: center; gap: 10px;
+min-height: 44px;
 }
 .list li .thumb {
-width: 28px; height: 28px; border-radius: 4px;
+width: 32px; height: 32px; border-radius: 5px;
 background: rgba(0,0,0,.08) center/cover no-repeat;
-flex-shrink: 0;
-border: 1px solid rgba(0,0,0,.12);
+flex-shrink: 0; border: 1px solid rgba(0,0,0,.12);
 }
 .list li .label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.list li .meta { color: #555; font-size: 13px; font-variant-numeric: tabular-nums; font-weight: 600; }
-.list li .chev { color: #555; font-size: 12px; }
+.list li .meta {
+color: #555; font-size: 12px; flex-shrink: 0;
+max-width: 120px; text-align: right;
+white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.list li .chev { color: #555; font-size: 14px; flex-shrink: 0; }
 .list li.active { background: var(–bar); color: #fff; }
-.list li.active .meta, .list li.active .chev { color: #fff; }
+.list li.active .meta, .list li.active .chev { color: rgba(255,255,255,.9); }
 .list li.active .thumb { border-color: rgba(255,255,255,.4); }
 
-.preview {
-position: absolute; inset: 22px 0 0 0;
-background: #000;
-display: none;
-align-items: center; justify-content: center;
-flex-direction: column; gap: 8px; padding: 12px;
+/* ── 옵션 화면 (view 안에 들어가는 컨텐츠) ── */
+.options-body { position: absolute; inset: 0; overflow: hidden; }
+.options-body ul { list-style: none; margin: 0; padding: 0; transition: transform .18s cubic-bezier(.2,.8,.2,1); }
+.options-body li {
+padding: 0 14px;
+font-size: 16px; line-height: 1.2;
+border-bottom: 1px solid rgba(0,0,0,.06);
+display: flex; align-items: center; justify-content: space-between;
+min-height: 44px;
 }
-.preview.show { display: flex; }
-.preview img { max-width: 100%; max-height: 65%; object-fit: contain; border-radius: 4px; }
-.preview .pLabel { color: #fff; font-size: 14px; font-weight: 600; text-align: center; }
-.preview .pCount { color: #ccc; font-size: 12px; font-variant-numeric: tabular-nums; }
-.preview input[type=file] { display: none; }
-.preview label.upload {
-font-size: 10px; color: #bbb; border: 1px dashed #555;
-padding: 4px 10px; border-radius: 4px; cursor: pointer;
-}
+.options-body li .check { font-size: 16px; color: #2e55a8; width: 22px; flex-shrink: 0; text-align: right; }
+.options-body li.active { background: var(–bar); color: #fff; }
+.options-body li.active .check { color: #fff; }
 
-.empty { padding: 16px 14px; font-size: 12px; color: #333; text-align: center; line-height: 1.5; }
-.empty .big { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+/* ── 초기 화면 ── */
+.empty { padding: 24px 18px; font-size: 14px; color: #333; text-align: center; line-height: 1.6; }
+.empty .big { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
 .empty button, .empty label.btn {
-display: inline-block;
-margin: 6px 3px 0;
+display: inline-block; margin: 8px 4px 0;
 background: #2e55a8; color: #fff; border: none;
-padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;
+padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px;
 }
 .empty label.btn.ghost { background: transparent; color: #2e55a8; border: 1px solid #2e55a8; }
-.empty label.btn.danger { background: transparent; color: #c44; border: 1px solid #c44; font-size: 10px; }
+.empty label.btn.danger { background: transparent; color: #c44; border: 1px solid #c44; font-size: 12px; }
 .empty input[type=file] { display: none; }
 
+/* ── 다운로드 모달 ── */
 .dlmodal {
-position: absolute; inset: 22px 0 0 0;
+position: absolute; inset: 26px 0 0 0;
 background: rgba(0,0,0,.9);
-display: none;
-align-items: center; justify-content: center;
-flex-direction: column; gap: 10px; padding: 16px;
-z-index: 10;
+display: none; align-items: center; justify-content: center;
+flex-direction: column; gap: 12px; padding: 20px; z-index: 100;
 }
 .dlmodal.show { display: flex; }
-.dlmodal p { color: #fff; font-size: 12px; text-align: center; margin: 0; line-height: 1.5; }
+.dlmodal p { color: #fff; font-size: 13px; text-align: center; margin: 0; line-height: 1.5; }
 .dlmodal a.dlbtn {
-background: #2e55a8; color: #fff; padding: 8px 16px; border-radius: 6px;
-text-decoration: none; font-size: 13px; font-weight: 600;
+background: #2e55a8; color: #fff; padding: 10px 20px; border-radius: 8px;
+text-decoration: none; font-size: 14px; font-weight: 600;
 }
 .dlmodal button {
 background: transparent; color: #ccc; border: 1px solid #555;
-padding: 4px 12px; border-radius: 4px; font-size: 11px; cursor: pointer;
+padding: 6px 14px; border-radius: 6px; font-size: 12px; cursor: pointer;
 }
 
 .toast {
-position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%);
-background: rgba(0,0,0,.75); color: #fff; font-size: 11px;
-padding: 4px 10px; border-radius: 10px; opacity: 0; transition: opacity .2s;
-pointer-events: none; white-space: nowrap; z-index: 5;
+position: fixed; left: 50%; bottom: 80px; transform: translateX(-50%);
+background: rgba(0,0,0,.8); color: #fff; font-size: 13px;
+padding: 8px 14px; border-radius: 16px; opacity: 0; transition: opacity .2s;
+pointer-events: none; white-space: nowrap; z-index: 200;
 max-width: 80%; text-align: center;
 }
 .toast.show { opacity: 1; }
 
-.wheel-wrap { margin-top: auto; display: grid; place-items: center; padding-top: 18px; }
-
+/* ── 휠: 작게 ── */
+.wheel-wrap {
+display: flex; align-items: center; justify-content: center;
+padding-top: 12px;
+flex-shrink: 0;
+}
 .wheel {
-width: 82%; aspect-ratio: 1/1; border-radius: 50%;
+width: min(58%, 240px);
+aspect-ratio: 1/1; border-radius: 50%;
 position: relative;
 background: radial-gradient(circle at 50% 40%, #f4f1ea 0%, #dcd8ce 70%, #c9c4b8 100%);
 box-shadow:
@@ -155,77 +196,47 @@ inset 0 2px 4px rgba(255,255,255,.8),
 inset 0 -6px 14px rgba(0,0,0,.12),
 0 2px 6px rgba(0,0,0,.15),
 0 0 0 1px var(–wheel-edge);
-cursor: grab; touch-action: none;
-overflow: hidden;  /* 회전 패턴 잘림 방지 */
+cursor: grab; touch-action: none; overflow: hidden;
 }
-.wheel.dragging { cursor: grabbing; }
-
-/* 휠 내부: 손가락 따라 회전하는 원형 패턴 (기요셰 느낌) */
 .wheel::before {
 content: “”;
-position: absolute;
-inset: 6%;
-border-radius: 50%;
-background:
-repeating-conic-gradient(
+position: absolute; inset: 6%; border-radius: 50%;
+background: repeating-conic-gradient(
 from 0deg,
-rgba(0,0,0,0) 0deg,
-rgba(0,0,0,0) 3deg,
-rgba(0,0,0,.04) 3deg,
-rgba(0,0,0,.04) 3.5deg
+rgba(0,0,0,0) 0deg, rgba(0,0,0,0) 3deg,
+rgba(0,0,0,.04) 3deg, rgba(0,0,0,.04) 3.5deg
 );
 transform: rotate(var(–rot, 0deg));
 transition: transform .08s linear;
 pointer-events: none;
 }
-
-/* 12시 방향 작은 틱 마크 (항목 변경 시 번쩍) */
+.wheel.dragging { cursor: grabbing; }
 .wheel .tickmark {
-position: absolute;
-top: 3%; left: 50%;
-width: 3px; height: 8px;
-background: #4a77c9;
-border-radius: 2px;
-transform: translateX(-50%);
-opacity: 0;
-pointer-events: none;
+position: absolute; top: 3%; left: 50%;
+width: 3px; height: 7px; background: #4a77c9;
+border-radius: 2px; transform: translateX(-50%);
+opacity: 0; pointer-events: none;
 }
-.wheel .tickmark.flash {
-opacity: 1;
-box-shadow: 0 0 8px #4a77c9;
-transition: opacity .05s ease-out;
-}
-.wheel .tickmark.fade { opacity: 0; transition: opacity .3s ease; }
-
-/* 손가락 따라가는 빛 */
+.wheel .tickmark.flash { opacity: 1; box-shadow: 0 0 8px #4a77c9; transition: opacity .05s ease-out; }
+.wheel .tickmark.fade  { opacity: 0; transition: opacity .3s ease; }
 .wheel .fingerLight {
 position: absolute;
-width: 48px; height: 48px;
-border-radius: 50%;
+width: 42px; height: 42px; border-radius: 50%;
 background: radial-gradient(circle,
-rgba(74,119,201,.35) 0%,
-rgba(74,119,201,.15) 40%,
-transparent 70%);
+rgba(74,119,201,.4) 0%, rgba(74,119,201,.15) 40%, transparent 70%);
 transform: translate(-50%, -50%) scale(0);
 transition: transform .2s ease, opacity .2s ease;
-opacity: 0;
-pointer-events: none;
-mix-blend-mode: multiply;
+opacity: 0; pointer-events: none; mix-blend-mode: multiply;
 }
-.wheel.dragging .fingerLight {
-opacity: 1;
-transform: translate(-50%, -50%) scale(1);
-}
-
+.wheel.dragging .fingerLight { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 .tag {
 position: absolute; font-weight: 700; color: #4a4a4a;
-letter-spacing: .08em; cursor: pointer; font-size: 14px;
-z-index: 2;
+letter-spacing: .06em; cursor: pointer; font-size: 11px; z-index: 2;
 }
-.tag.menu { top: 8%; left: 50%; transform: translateX(-50%); font-size: 11px; }
-.tag.prev { top: 50%; left: 8%;  transform: translateY(-50%); font-size: 18px; }
-.tag.next { top: 50%; right: 8%; transform: translateY(-50%); font-size: 18px; }
-.tag.play { bottom: 8%; left: 50%; transform: translateX(-50%); font-size: 11px; }
+.tag.menu { top: 8%; left: 50%; transform: translateX(-50%); }
+.tag.prev { top: 50%; left: 8%;  transform: translateY(-50%); font-size: 14px; }
+.tag.next { top: 50%; right: 8%; transform: translateY(-50%); font-size: 14px; }
+.tag.play { bottom: 8%; left: 50%; transform: translateX(-50%); }
 .center-btn {
 position: absolute; top: 50%; left: 50%;
 width: 38%; height: 38%;
@@ -237,178 +248,261 @@ inset 0 1px 0 rgba(255,255,255,.9),
 inset 0 -4px 10px rgba(0,0,0,.08),
 0 1px 3px rgba(0,0,0,.15),
 0 0 0 1px var(–wheel-edge);
-cursor: pointer;
-z-index: 3;
+cursor: pointer; z-index: 3;
 }
 .center-btn:active { box-shadow: inset 0 2px 4px rgba(0,0,0,.12), 0 0 0 1px var(–wheel-edge); }
+
+/* ── 하단 버튼 패널 ── */
+.btn-panel {
+display: flex; gap: 10px;
+padding: 12px 14px 14px;
+background: linear-gradient(180deg, #eae6dc 0%, #ddd9d0 100%);
+border-radius: 18px;
+box-shadow:
+0 10px 24px rgba(30,30,30,.18),
+0 0 0 1px var(–body-edge);
+flex-shrink: 0;
+}
+.btn-panel button {
+flex: 1;
+padding: 12px 0;
+border: none;
+border-radius: 12px;
+font-size: 13px;
+font-weight: 700;
+letter-spacing: .08em;
+cursor: pointer;
+position: relative;
+box-shadow:
+inset 0 1px 0 rgba(255,255,255,.7),
+0 2px 4px rgba(0,0,0,.15);
+transition: transform .08s, box-shadow .08s;
+}
+.btn-panel button:active {
+transform: translateY(1px);
+box-shadow: inset 0 2px 3px rgba(0,0,0,.15);
+}
+.btn-save {
+background: linear-gradient(180deg, #f0eee8 0%, #dbd7ce 100%);
+color: #3a3a3a;
+}
+.btn-export {
+background: linear-gradient(180deg, #4a77c9 0%, #2e55a8 100%);
+color: #fff;
+box-shadow:
+inset 0 1px 0 rgba(255,255,255,.3),
+0 2px 4px rgba(46,85,168,.4) !important;
+}
+.btn-panel .dot {
+position: absolute; top: 7px; right: 8px;
+width: 7px; height: 7px; border-radius: 50%;
+background: #ff9d5a; box-shadow: 0 0 4px rgba(255,180,80,.8);
+}
+.btn-panel .dot.clean { background: #a0e878; box-shadow: 0 0 4px rgba(160,230,120,.8); }
+
+/* 가로 모드 대응 */
+@media (orientation: landscape) and (max-height: 500px) {
+.ipod { flex-direction: row; padding: 8px; }
+.ipod-body { flex: 1.5; }
+.btn-panel {
+flex-direction: column; border-radius: 18px;
+min-width: 100px;
+}
+}
 </style>
 
 </head>
 <body>
 
 <div class="ipod">
-  <div class="screen">
-    <div class="titlebar">
-      <span id="screenTitle">iPod</span>
-      <span class="dot clean" id="dirtyDot" title="저장 상태"></span>
-    </div>
-    <div class="list" id="list">
-      <ul id="listUl"></ul>
-      <div class="empty" id="emptyView" style="display:none;"></div>
-      <div class="preview" id="previewView">
-        <img id="previewImg" alt="" />
-        <div class="pLabel" id="previewLabel"></div>
-        <div class="pCount" id="previewCount"></div>
-        <label class="upload">
-          이미지 교체
-          <input type="file" id="imgPicker" accept="image/*" />
-        </label>
+  <div class="ipod-body">
+    <div class="screen">
+      <div class="titlebar">
+        <span class="t-text" id="screenTitle">iPod</span>
       </div>
-      <div class="dlmodal" id="dlModal">
-        <p id="dlMsg">파일이 준비됐어요.</p>
-        <a class="dlbtn" id="dlLink" download>파일 다운로드</a>
-        <button onclick="closeDownload()">닫기</button>
-      </div>
-      <div class="toast" id="toast"></div>
-    </div>
-  </div>
 
-  <div class="wheel-wrap">
-    <div class="wheel" id="wheel">
-      <span class="tickmark" id="tickmark"></span>
-      <span class="fingerLight" id="fingerLight"></span>
-      <span class="tag menu" id="btnMenu">MENU</span>
-      <span class="tag prev" id="btnPrev">−</span>
-      <span class="tag next" id="btnNext">+</span>
-      <span class="tag play" id="btnPlay">EXPORT</span>
-      <button class="center-btn" id="centerBtn" aria-label="Select"></button>
-    </div>
+```
+  <!-- 뷰 스택: 여러 view가 들어가고 슬라이드로 전환 -->
+  <div class="view-stack" id="viewStack"></div>
+
+  <div class="dlmodal" id="dlModal">
+    <p id="dlMsg">파일이 준비됐어요.</p>
+    <a class="dlbtn" id="dlLink" download>파일 다운로드</a>
+    <button onclick="closeDownload()">닫기</button>
   </div>
 </div>
 
+<div class="wheel-wrap">
+  <div class="wheel" id="wheel">
+    <span class="tickmark" id="tickmark"></span>
+    <span class="fingerLight" id="fingerLight"></span>
+    <span class="tag menu" id="btnMenu">MENU</span>
+    <span class="tag prev" id="btnPrev">◀</span>
+    <span class="tag next" id="btnNext">▶</span>
+    <span class="tag play" id="btnPlay">SELECT</span>
+    <button class="center-btn" id="centerBtn" aria-label="Select"></button>
+  </div>
+</div>
+```
+
+  </div>
+
+  <div class="btn-panel">
+    <button class="btn-save" id="btnSave">
+      <span class="dot" id="dirtyDot"></span>
+      SAVE
+    </button>
+    <button class="btn-export" id="btnExport">EXPORT</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <script>
 window.addEventListener('error', (e) => {
-  console.error('Global error:', e.message);
-  toast('에러: ' + (e.message || 'unknown').slice(0, 60));
+  toast('에러: ' + (e.message || '').slice(0, 60));
 });
 window.addEventListener('unhandledrejection', (e) => {
-  console.error('Promise rejection:', e.reason);
-  toast('Promise: ' + String(e.reason).slice(0, 60));
+  toast('에러: ' + String(e.reason).slice(0, 60));
 });
 
 const MAX_CELL_CHARS = 32000;
-const LS_KEY = 'ipod-wb-v1';
-const LS_FILENAME = 'ipod-filename-v1';
+const LS_KEY = 'ipod-wb-v2';
+const LS_FILENAME = 'ipod-filename-v2';
 let workbook = null;
 let fileName = localStorage.getItem(LS_FILENAME) || 'ipod-data.xlsx';
 let dirty = false;
 
+// view: 'init' | 'tabs' | 'rows' | 'options'
 const state = {
   view: 'init',
   currentTabIdx: -1,
-  cursor: 0,
-  preview: false,
+  rowCursor: 0,
+  optionCursor: 0,
 };
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
   || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-// ==============================================================
-// 휠 피드백: 틱 사운드 (Web Audio로 생성)
-// ==============================================================
+// ====== 오디오 / 피드백 ======
 let audioCtx = null;
 function ensureAudio() {
   if (!audioCtx) {
-    try {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    } catch (e) {}
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
   }
-  // iOS는 터치 이벤트 안에서 resume 해야 함
-  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  if (audioCtx?.state === 'suspended') audioCtx.resume();
 }
-
 function playTick() {
   if (!audioCtx) return;
   const now = audioCtx.currentTime;
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
-
-  // 짧고 높은 "틱" 느낌: 사각파 + 빠른 감쇠
   osc.type = 'square';
   osc.frequency.setValueAtTime(2200, now);
   osc.frequency.exponentialRampToValueAtTime(800, now + 0.02);
-
   gain.gain.setValueAtTime(0.08, now);
   gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
-
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  osc.start(now);
-  osc.stop(now + 0.04);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(now); osc.stop(now + 0.04);
 }
 
-// ==============================================================
-// 휠 피드백: 틱마크 번쩍
-// ==============================================================
 const tickEl = document.getElementById('tickmark');
-let tickFlashTimer;
+let tickTimer;
 function flashTick() {
   tickEl.classList.remove('fade');
   tickEl.classList.add('flash');
-  clearTimeout(tickFlashTimer);
-  tickFlashTimer = setTimeout(() => {
+  clearTimeout(tickTimer);
+  tickTimer = setTimeout(() => {
     tickEl.classList.remove('flash');
     tickEl.classList.add('fade');
   }, 60);
 }
-
-// ==============================================================
-// 휠 피드백: 햅틱
-// ==============================================================
-function haptic() {
-  try { navigator.vibrate && navigator.vibrate(4); } catch (e) {}
+function tickFeedback() {
+  playTick(); flashTick();
+  try { navigator.vibrate && navigator.vibrate(4); } catch(e) {}
 }
 
-// ==============================================================
-// 휠 피드백: 손가락 위치 빛 + 내부 디스크 회전
-// ==============================================================
 const wheel = document.getElementById('wheel');
 const fingerLight = document.getElementById('fingerLight');
-
-function moveFingerLight(clientX, clientY) {
+let diskRot = 0;
+function moveFingerLight(cx, cy) {
   const r = wheel.getBoundingClientRect();
-  const x = clientX - r.left;
-  const y = clientY - r.top;
-  fingerLight.style.left = x + 'px';
-  fingerLight.style.top = y + 'px';
+  fingerLight.style.left = (cx - r.left) + 'px';
+  fingerLight.style.top  = (cy - r.top)  + 'px';
 }
-
 function rotateDisk(deg) {
-  wheel.style.setProperty('--rot', deg + 'deg');
+  diskRot += deg;
+  wheel.style.setProperty('--rot', diskRot + 'deg');
 }
 
-// ==============================================================
-// 종합 틱 피드백 (커서 이동 시 호출)
-// ==============================================================
-function tickFeedback() {
-  playTick();
-  haptic();
-  flashTick();
+// ====== 뷰 스택 (슬라이드 전환) ======
+const viewStack = document.getElementById('viewStack');
+let currentView = null;      // DOM element
+let animating = false;
+const ANIM_DUR = 280;
+
+function createView(htmlContent) {
+  const v = document.createElement('div');
+  v.className = 'view';
+  v.innerHTML = htmlContent;
+  return v;
 }
 
-// ==============================================================
-// 시작 / 파일 처리
-// ==============================================================
+// direction: 'forward' (새 뷰가 오른쪽에서 들어옴), 'backward' (왼쪽에서)
+function transitionTo(newView, direction = 'forward') {
+  if (animating) {
+    // 빠르게 연타하면 진행중인 애니 취소하고 강제 세팅
+    if (currentView) currentView.remove();
+  }
+  animating = true;
+  const old = currentView;
+  currentView = newView;
+
+  // 새 뷰를 스택에 붙이고 초기 위치 설정
+  if (direction === 'forward') {
+    newView.classList.add('slide-in-right');
+  } else {
+    newView.classList.add('slide-in-left');
+  }
+  viewStack.appendChild(newView);
+
+  // 강제 reflow 한 뒤에 클래스 변경해야 transition이 발동됨
+  void newView.offsetWidth;
+
+  // 새 뷰를 show, 기존 뷰를 반대 방향으로 밀어냄
+  newView.classList.remove('slide-in-right', 'slide-in-left');
+  newView.classList.add('show');
+
+  if (old) {
+    old.classList.remove('show');
+    if (direction === 'forward') old.classList.add('slide-out-left');
+    else old.classList.add('slide-out-right');
+  }
+
+  setTimeout(() => {
+    if (old) old.remove();
+    animating = false;
+  }, ANIM_DUR);
+}
+
+function setFirstView(newView) {
+  if (currentView) currentView.remove();
+  currentView = newView;
+  newView.classList.add('show');
+  viewStack.appendChild(newView);
+}
+
+// ====== 시작 ======
 function start() {
   const saved = localStorage.getItem(LS_KEY);
   if (saved) {
     try {
       workbook = JSON.parse(saved);
-      dirty = true;
+      dirty = false;
       updateDirty();
-      goTabs();
+      goTabs(true);
       return;
-    } catch (e) { console.error('복원 실패:', e); }
+    } catch(e) {}
   }
   showStart();
 }
@@ -417,16 +511,22 @@ function showStart() {
   state.view = 'init';
   setTitle('iPod');
   const hasBackup = !!localStorage.getItem(LS_KEY);
-  renderEmpty(`
-    <div class="big">엑셀 파일로 시작</div>
-    <div>기존 파일을 열거나 새 파일을 만들어요.</div>
-    <label class="btn">
-      파일 열기
-      <input type="file" id="openFile" accept=".xlsx,.xls" />
-    </label>
-    <button class="btn ghost" onclick="createNew()">새로 만들기</button>
-    ${hasBackup ? '<br><button class="btn danger" onclick="resetAll()">저장된 데이터 삭제</button>' : ''}
-  `);
+  const html = `
+    <div class="empty">
+      <div class="big">엑셀 파일로 시작</div>
+      <div>기존 파일을 열거나 새 파일을 만들어요.</div>
+      <label class="btn">파일 열기<input type="file" id="openFile" accept=".xlsx,.xls"/></label>
+      <button class="btn ghost" onclick="createNew()">새로 만들기</button>
+      ${hasBackup ? '<br><button class="btn danger" onclick="resetAll()">저장 데이터 삭제</button>' : ''}
+    </div>`;
+  const v = createView(html);
+  if (currentView) transitionTo(v, 'backward');
+  else setFirstView(v);
+
+  setTimeout(() => {
+    const inp = v.querySelector('#openFile');
+    if (inp) inp.addEventListener('change', onFileOpen);
+  }, 50);
 }
 
 async function onFileOpen(e) {
@@ -441,16 +541,17 @@ async function onFileOpen(e) {
     saveLocal();
     updateDirty();
     goTabs();
-  } catch (err) {
-    console.error(err);
-    toast('파일 읽기 실패');
-  }
+  } catch(err) { toast('파일 읽기 실패: ' + err.message); }
 }
 
 function createNew() {
-  workbook = {
-    tabs: [{ title: 'Sheet1', rows: [{ label: '첫 항목', count: 0, image: '' }] }]
-  };
+  workbook = { tabs: [{
+    title: 'Sheet1',
+    rows: [
+      { label: '201호', value: '', options: ['청소완료','점검필요','공실'], image: '' },
+      { label: '202호', value: '', options: ['청소완료','점검필요','공실'], image: '' },
+    ]
+  }]};
   fileName = 'ipod-data.xlsx';
   localStorage.setItem(LS_FILENAME, fileName);
   dirty = true;
@@ -460,7 +561,7 @@ function createNew() {
 }
 
 function resetAll() {
-  if (!confirm('브라우저에 저장된 모든 데이터를 삭제합니다.\n정말 진행할까요?')) return;
+  if (!confirm('저장된 데이터를 모두 삭제할까요?')) return;
   localStorage.removeItem(LS_KEY);
   localStorage.removeItem(LS_FILENAME);
   workbook = null;
@@ -470,41 +571,37 @@ function resetAll() {
   showStart();
 }
 
+// ====== 파싱 ======
 function parseWorkbook(arrayBuffer) {
   const wb = XLSX.read(arrayBuffer, { type: 'array' });
-  const tabs = [];
   const imageChunks = {};
 
   if (wb.SheetNames.includes('_images')) {
-    const imgSheet = wb.Sheets['_images'];
-    const imgRows = XLSX.utils.sheet_to_json(imgSheet, { header: 1 });
-    for (let i = 1; i < imgRows.length; i++) {
-      const [t, l, p, d] = imgRows[i] || [];
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets['_images'], { header: 1 });
+    for (let i = 1; i < rows.length; i++) {
+      const [t, l, p, d] = rows[i] || [];
       if (t == null || l == null || d == null) continue;
       const key = `${t}::${l}`;
       if (!imageChunks[key]) imageChunks[key] = {};
       imageChunks[key][Number(p) || 0] = String(d);
     }
   }
-
   const imageMap = {};
   Object.keys(imageChunks).forEach(key => {
     const parts = imageChunks[key];
-    const indices = Object.keys(parts).map(Number).sort((a, b) => a - b);
-    imageMap[key] = indices.map(i => parts[i]).join('');
+    imageMap[key] = Object.keys(parts).map(Number).sort((a,b)=>a-b).map(i=>parts[i]).join('');
   });
 
+  const tabs = [];
   wb.SheetNames.forEach(name => {
     if (name === '_images') return;
-    const sheet = wb.Sheets[name];
-    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-    const data = rows.slice(1)
-      .map(r => ({
-        label: String(r?.[0] ?? '').trim(),
-        count: Number.isFinite(+r?.[1]) ? +r[1] : 0,
-      }))
-      .filter(r => r.label !== '');
-    data.forEach(r => { r.image = imageMap[`${name}::${r.label}`] || ''; });
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1 });
+    const data = rows.slice(1).map(r => {
+      const label = String(r?.[0] ?? '').trim();
+      const value = String(r?.[1] ?? '').trim();
+      const options = r.slice(2).map(v => String(v ?? '').trim()).filter(v => v !== '');
+      return { label, value, options, image: imageMap[`${name}::${label}`] || '' };
+    }).filter(r => r.label !== '');
     tabs.push({ title: name, rows: data });
   });
 
@@ -512,60 +609,52 @@ function parseWorkbook(arrayBuffer) {
   return { tabs };
 }
 
-function exportWorkbook() {
+// ====== Export ======
+function buildAndExport() {
   if (!workbook) return;
   try {
     toast('Export 중...');
     const wb = XLSX.utils.book_new();
 
     workbook.tabs.forEach(tab => {
-      const aoa = [['label', 'count'],
-        ...tab.rows.map(r => [r.label, r.count])];
-      const ws = XLSX.utils.aoa_to_sheet(aoa);
-      XLSX.utils.book_append_sheet(wb, ws, tab.title);
+      const maxOpts = Math.max(0, ...tab.rows.map(r => r.options.length));
+      const header = ['label', 'value', ...Array.from({length: maxOpts}, (_,i) => `option${i+1}`)];
+      const aoa = [header, ...tab.rows.map(r => [r.label, r.value, ...r.options])];
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), tab.title);
     });
 
-    const imgAoa = [['tab', 'label', 'part', 'dataChunk']];
+    const imgAoa = [['tab','label','part','dataChunk']];
     workbook.tabs.forEach(tab => {
       tab.rows.forEach(r => {
         if (!r.image) return;
-        const img = r.image;
-        const chunks = Math.ceil(img.length / MAX_CELL_CHARS);
+        const chunks = Math.ceil(r.image.length / MAX_CELL_CHARS);
         for (let i = 0; i < chunks; i++) {
-          imgAoa.push([tab.title, r.label, i,
-            img.slice(i * MAX_CELL_CHARS, (i + 1) * MAX_CELL_CHARS)]);
+          imgAoa.push([tab.title, r.label, i, r.image.slice(i*MAX_CELL_CHARS,(i+1)*MAX_CELL_CHARS)]);
         }
       });
     });
-    const imgWs = XLSX.utils.aoa_to_sheet(imgAoa);
-    XLSX.utils.book_append_sheet(wb, imgWs, '_images');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(imgAoa), '_images');
+    if (!wb.Workbook) wb.Workbook = { Sheets: [] };
+    wb.Workbook.Sheets = wb.SheetNames.map(n => ({ name: n, Hidden: n === '_images' ? 1 : 0 }));
 
-    if (wb.Workbook == null) wb.Workbook = { Sheets: [] };
-    wb.Workbook.Sheets = wb.SheetNames.map(n => ({
-      name: n, Hidden: n === '_images' ? 1 : 0
-    }));
-
-    const arrayBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([arrayBuffer], {
+    const ab = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([ab], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     });
     const fname = fileName || 'ipod-data.xlsx';
 
     if (navigator.share && navigator.canShare) {
-      const shareFile = new File([blob], fname, { type: blob.type });
-      if (navigator.canShare({ files: [shareFile] })) {
-        navigator.share({ files: [shareFile], title: fname })
-          .then(() => { dirty = false; updateDirty(); toast('공유됨'); })
-          .catch((err) => {
-            if (err.name !== 'AbortError') fallbackDownload(blob, fname);
-          });
+      const sf = new File([blob], fname, { type: blob.type });
+      if (navigator.canShare({ files: [sf] })) {
+        navigator.share({ files: [sf], title: fname })
+          .then(() => toast('공유됨'))
+          .catch(err => { if (err.name !== 'AbortError') fallbackDownload(blob, fname); });
         return;
       }
     }
     fallbackDownload(blob, fname);
-  } catch (err) {
-    console.error('Export 실패:', err);
-    toast('Export 실패: ' + String(err.message || err).slice(0, 60));
+  } catch(err) {
+    toast('Export 실패: ' + String(err.message).slice(0, 50));
   }
 }
 
@@ -575,193 +664,169 @@ function fallbackDownload(blob, fname) {
     const link = document.getElementById('dlLink');
     link.href = url; link.download = fname;
     document.getElementById('dlMsg').innerHTML =
-      `<b>${esc(fname)}</b> 준비됨<br>` +
-      `아래 버튼을 <b>길게 눌러</b> "다운로드 링크된 파일"<br>` +
-      `또는 탭 후 공유 → 파일에 저장`;
+      `<b>${esc(fname)}</b><br>버튼을 <b>길게 눌러</b> 다운로드<br>또는 탭 후 공유 → 파일에 저장`;
     document.getElementById('dlModal').classList.add('show');
-    dirty = false; updateDirty();
   } else {
     const a = document.createElement('a');
     a.href = url; a.download = fname;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
-    dirty = false; updateDirty();
-    toast('Exported');
+    toast('Export 완료');
   }
 }
+function closeDownload() { document.getElementById('dlModal').classList.remove('show'); }
 
-function closeDownload() {
-  document.getElementById('dlModal').classList.remove('show');
-}
-
+// ====== 로컬 저장 ======
 function saveLocal() {
   try { localStorage.setItem(LS_KEY, JSON.stringify(workbook)); }
-  catch (e) { toast('브라우저 저장 용량 초과'); }
+  catch(e) { toast('저장 용량 초과'); }
 }
-
-function markDirty() { dirty = true; updateDirty(); saveLocal(); }
-
+function markDirty() { dirty = true; updateDirty(); }
 function updateDirty() {
   const dot = document.getElementById('dirtyDot');
   dot.classList.toggle('clean', !dirty);
-  dot.title = dirty ? '저장되지 않음' : '저장됨';
 }
 
-async function resizeImage(file, maxDim = 800, quality = 0.8) {
-  const dataUrl = await new Promise((res, rej) => {
-    const fr = new FileReader();
-    fr.onload = () => res(fr.result);
-    fr.onerror = () => rej(new Error('read fail'));
-    fr.readAsDataURL(file);
-  });
-  const img = await new Promise((res, rej) => {
-    const image = new Image();
-    image.onload = () => res(image);
-    image.onerror = () => rej(new Error('image load fail'));
-    image.src = dataUrl;
-  });
-  let { width, height } = img;
-  const scale = Math.min(1, maxDim / Math.max(width, height));
-  width = Math.round(width * scale);
-  height = Math.round(height * scale);
-  const canvas = document.createElement('canvas');
-  canvas.width = width; canvas.height = height;
-  canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-  return canvas.toDataURL('image/jpeg', quality);
-}
-
-async function setImageFromFile(file) {
-  if (!file) return;
-  try {
-    toast('이미지 처리 중…');
-    const resized = await resizeImage(file, 800, 0.8);
-    const row = currentRow();
-    if (!row) return;
-    row.image = resized;
-    markDirty();
-    updatePreview();
-    renderRows();
-    toast('이미지 설정됨');
-  } catch (err) { console.error(err); toast('이미지 처리 실패'); }
-}
-
-async function goTabs() {
+// ====== 뷰 전환 (애니메이션 포함) ======
+function goTabs(initial) {
+  const wasDeeper = (state.view === 'rows' || state.view === 'options');
   state.view = 'tabs';
-  state.cursor = 0;
-  hidePreview();
-  setTitle(fileName.replace(/\.xlsx?$/,'').slice(0,18) || 'iPod');
-  if (!workbook.tabs.length) return renderEmpty('탭이 없어요.');
-  renderList(workbook.tabs.map(t => ({ label: t.title, meta: String(t.rows.length) })));
+  state.rowCursor = 0;
+  setTitle(fileName.replace(/\.xlsx?$/,'').slice(0,24) || 'iPod');
+
+  if (!workbook?.tabs.length) {
+    showEmptyView('탭이 없어요.', wasDeeper ? 'backward' : 'forward');
+    return;
+  }
+  const html = `<div class="list"><ul>${
+    workbook.tabs.map((t,i) => `
+      <li data-idx="${i}" class="${i === state.rowCursor ? 'active' : ''}">
+        <span class="label">${esc(t.title)}</span>
+        <span class="meta">${t.rows.length}행</span>
+        <span class="chev">›</span>
+      </li>`).join('')
+  }</ul></div>`;
+
+  const v = createView(html);
+  const dir = wasDeeper ? 'backward' : 'forward';
+  if (initial) setFirstView(v);
+  else transitionTo(v, dir);
+
+  // cursor 포지션 동기화용 리스트 ref
+  setTimeout(() => applyListCursor(), ANIM_DUR + 20);
 }
 
-async function goRows(idx) {
+function goRows(idx, direction = 'forward') {
   state.view = 'rows';
   state.currentTabIdx = idx;
-  state.cursor = 0;
-  hidePreview();
+  state.rowCursor = 0;
   const tab = workbook.tabs[idx];
-  setTitle(tab.title.slice(0, 18));
-  if (!tab.rows.length) return renderEmpty('행이 없어요.<br>A: 이름 / B: 숫자');
-  renderRows();
+  setTitle(tab.title.slice(0, 24));
+
+  if (!tab.rows.length) {
+    showEmptyView('행이 없어요.<br>A: 이름  B: 현재값  C~: 옵션들', direction);
+    return;
+  }
+
+  const html = `<div class="list"><ul>${
+    tab.rows.map((r,i) => {
+      const thumb = r.image
+        ? `<span class="thumb" style="background-image:url('${r.image.replace(/'/g,"\\'")}')"></span>`
+        : '';
+      return `
+        <li data-idx="${i}" class="${i === state.rowCursor ? 'active' : ''}">
+          ${thumb}
+          <span class="label">${esc(r.label)}</span>
+          <span class="meta">${esc(r.value || '—')}</span>
+          <span class="chev">›</span>
+        </li>`;
+    }).join('')
+  }</ul></div>`;
+
+  const v = createView(html);
+  transitionTo(v, direction);
+  setTimeout(() => applyListCursor(), ANIM_DUR + 20);
+}
+
+function goOptions(rowIdx) {
+  const row = currentTab().rows[rowIdx];
+  if (!row.options.length) { toast('옵션이 없어요 (C열~에 추가)'); return; }
+  state.view = 'options';
+
+  const cur = row.options.indexOf(row.value);
+  state.optionCursor = cur >= 0 ? cur : 0;
+  setTitle(row.label);
+
+  const html = `<div class="options-body"><ul>${
+    row.options.map((opt, i) => `
+      <li data-idx="${i}" class="${i === state.optionCursor ? 'active' : ''}">
+        <span>${esc(opt)}</span>
+        <span class="check">${opt === row.value ? '✓' : ''}</span>
+      </li>`).join('')
+  }</ul></div>`;
+
+  const v = createView(html);
+  transitionTo(v, 'forward');
+  setTimeout(() => applyOptionCursor(), ANIM_DUR + 20);
+}
+
+function selectOption() {
+  const row = currentTab().rows[state.rowCursor];
+  const chosen = row.options[state.optionCursor];
+  if (chosen == null) return;
+  row.value = chosen;
+  markDirty();
+  toast('✓ ' + chosen);
+  // 이전 화면(rows)으로 애니메이션하며 돌아감
+  goRows(state.currentTabIdx, 'backward');
+}
+
+function showEmptyView(msg, direction) {
+  const html = `<div class="empty">${msg}</div>`;
+  const v = createView(html);
+  transitionTo(v, direction);
 }
 
 function currentTab() { return workbook?.tabs[state.currentTabIdx]; }
-function currentRow() { return currentTab()?.rows[state.cursor]; }
+function currentRow() { return currentTab()?.rows[state.rowCursor]; }
 
-function bump(delta) {
-  if (state.view !== 'rows') return;
-  const row = currentRow();
-  if (!row) return;
-  row.count = (row.count || 0) + delta;
-  markDirty();
-  if (state.preview) updatePreview();
-  else renderRows();
-  toast(delta > 0 ? `+${delta}` : `${delta}`);
-}
-
-const listUl = document.getElementById('listUl');
-const emptyView = document.getElementById('emptyView');
-const previewView = document.getElementById('previewView');
-const previewImg = document.getElementById('previewImg');
-const previewLabel = document.getElementById('previewLabel');
-const previewCount = document.getElementById('previewCount');
+// ====== 렌더 / 커서 ======
 const screenTitle = document.getElementById('screenTitle');
-const toastEl = document.getElementById('toast');
-
+const toastEl     = document.getElementById('toast');
 function setTitle(t) { screenTitle.textContent = t; }
 
-function renderEmpty(html) {
-  listUl.style.display = 'none';
-  emptyView.style.display = 'block';
-  hidePreview();
-  emptyView.innerHTML = html;
-  const openF = document.getElementById('openFile');
-  if (openF) openF.addEventListener('change', onFileOpen);
-}
-
-function renderList(items) {
-  emptyView.style.display = 'none';
-  listUl.style.display = 'block';
-  listUl.innerHTML = '';
-  items.forEach((it) => {
-    const li = document.createElement('li');
-    const thumb = it.image
-      ? `<span class="thumb" style="background-image:url('${it.image.replace(/'/g,"\\'")}')"></span>`
-      : `<span class="thumb"></span>`;
-    li.innerHTML = `
-      ${thumb}
-      <span class="label">${esc(it.label)}</span>
-      ${it.meta != null ? `<span class="meta">${esc(it.meta)}</span>` : ''}
-      <span class="chev">›</span>`;
-    listUl.appendChild(li);
-  });
-  applyCursor();
-}
-
-function renderRows() {
-  renderList(currentTab().rows.map(r => ({
-    label: r.label, meta: String(r.count), image: r.image
-  })));
-}
-
-function applyCursor() {
-  const lis = [...listUl.querySelectorAll('li')];
-  lis.forEach((li, i) => li.classList.toggle('active', i === state.cursor));
+function applyListCursor() {
+  if (!currentView) return;
+  const ul = currentView.querySelector('.list ul');
+  if (!ul) return;
+  const lis = [...ul.querySelectorAll('li')];
+  const cur = state.rowCursor;
+  lis.forEach((li, i) => li.classList.toggle('active', i === cur));
   if (!lis.length) return;
-  const liH = lis[0].getBoundingClientRect().height || 36;
-  const listH = document.getElementById('list').getBoundingClientRect().height;
-  const visibleCount = Math.max(1, Math.floor(listH / liH));
-  const anchor = Math.min(state.cursor, Math.max(0, lis.length - visibleCount));
-  listUl.style.transform = `translateY(${-anchor * liH}px)`;
+  const liH = lis[0].getBoundingClientRect().height || 44;
+  const listH = currentView.querySelector('.list').getBoundingClientRect().height;
+  const visible = Math.max(1, Math.floor(listH / liH));
+  const anchor = Math.min(cur, Math.max(0, lis.length - visible));
+  ul.style.transform = `translateY(${-anchor * liH}px)`;
 }
 
-function showPreview() {
-  if (state.view !== 'rows' || !currentRow()) return;
-  state.preview = true;
-  previewView.classList.add('show');
-  listUl.style.display = 'none';
-  updatePreview();
-}
-function hidePreview() {
-  state.preview = false;
-  previewView.classList.remove('show');
-  if (state.view === 'tabs' || state.view === 'rows') {
-    listUl.style.display = 'block';
-  }
-}
-function updatePreview() {
-  const r = currentRow();
-  if (!r) return;
-  previewImg.src = r.image || '';
-  previewImg.style.display = r.image ? 'block' : 'none';
-  previewLabel.textContent = r.label;
-  previewCount.textContent = `count: ${r.count}`;
+function applyOptionCursor() {
+  if (!currentView) return;
+  const ul = currentView.querySelector('.options-body ul');
+  if (!ul) return;
+  const lis = [...ul.querySelectorAll('li')];
+  lis.forEach((li, i) => li.classList.toggle('active', i === state.optionCursor));
+  if (!lis.length) return;
+  const liH = lis[0].getBoundingClientRect().height || 44;
+  const bodyH = currentView.querySelector('.options-body').getBoundingClientRect().height;
+  const visible = Math.max(1, Math.floor(bodyH / liH));
+  const anchor = Math.min(state.optionCursor, Math.max(0, lis.length - visible));
+  ul.style.transform = `translateY(${-anchor * liH}px)`;
 }
 
 function esc(s) {
-  return String(s).replace(/[&<>"']/g, c => (
-    {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
-  ));
+  return String(s).replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 let toastTimer;
@@ -772,12 +837,28 @@ function toast(msg) {
   toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2000);
 }
 
-// ==============================================================
-// 휠 조작 + 시각 피드백
-// ==============================================================
+// ====== 커서 이동 ======
+function moveCursor(delta) {
+  if (state.view === 'options') {
+    const row = currentRow();
+    if (!row) return;
+    const max = row.options.length - 1;
+    state.optionCursor = Math.max(0, Math.min(max, state.optionCursor + delta));
+    applyOptionCursor();
+  } else if (state.view === 'rows') {
+    const max = (currentTab()?.rows.length || 0) - 1;
+    state.rowCursor = Math.max(0, Math.min(max, state.rowCursor + delta));
+    applyListCursor();
+  } else if (state.view === 'tabs') {
+    const max = (workbook?.tabs.length || 0) - 1;
+    state.rowCursor = Math.max(0, Math.min(max, state.rowCursor + delta));
+    applyListCursor();
+  }
+}
+
+// ====== 휠 이벤트 ======
 let dragging = false, lastAngle = 0, accumAngle = 0;
-let diskRotation = 0;   // 내부 디스크 회전 각도 (누적)
-const DEG_PER_ITEM = 24;
+const DEG_PER_ITEM = 22;
 
 function angleFromEvent(e) {
   const r = wheel.getBoundingClientRect();
@@ -792,7 +873,6 @@ wheel.addEventListener('pointerdown', (e) => {
   wheel.setPointerCapture(e.pointerId);
   lastAngle = angleFromEvent(e);
   moveFingerLight(e.clientX, e.clientY);
-  // 첫 터치 시 오디오 활성화 (iOS)
   ensureAudio();
 });
 wheel.addEventListener('pointermove', (e) => {
@@ -803,16 +883,9 @@ wheel.addEventListener('pointermove', (e) => {
   if (d < -180) d += 360;
   accumAngle += d;
   lastAngle = a;
-
-  // 손가락 빛 이동
   moveFingerLight(e.clientX, e.clientY);
-
-  // 내부 디스크를 손가락과 같은 방향으로 조금씩 회전
-  diskRotation += d;
-  rotateDisk(diskRotation);
-
-  // 임계치 넘으면 커서 이동 + 피드백
-  while (accumAngle >= DEG_PER_ITEM) { moveCursor(1); accumAngle -= DEG_PER_ITEM; tickFeedback(); }
+  rotateDisk(d);
+  while (accumAngle >= DEG_PER_ITEM)  { moveCursor(1);  accumAngle -= DEG_PER_ITEM; tickFeedback(); }
   while (accumAngle <= -DEG_PER_ITEM) { moveCursor(-1); accumAngle += DEG_PER_ITEM; tickFeedback(); }
 });
 function endDrag() {
@@ -823,64 +896,56 @@ function endDrag() {
 }
 wheel.addEventListener('pointerup', endDrag);
 wheel.addEventListener('pointercancel', endDrag);
-
-function moveCursor(delta) {
-  const max = (state.view === 'tabs' ? workbook?.tabs.length
-             : state.view === 'rows' ? currentTab()?.rows.length
-             : 0) - 1;
-  if (max < 0) return;
-  state.cursor = Math.max(0, Math.min(max, state.cursor + delta));
-  if (state.preview) updatePreview();
-  else applyCursor();
-}
-
-document.getElementById('btnMenu').addEventListener('click', () => {
-  if (document.getElementById('dlModal').classList.contains('show')) return closeDownload();
-  if (state.preview) return hidePreview();
-  if (state.view === 'rows') goTabs();
-  else if (state.view === 'tabs') showStart();
-});
-document.getElementById('btnPlay').addEventListener('click', exportWorkbook);
-document.getElementById('btnPrev').addEventListener('click', () => {
-  if (state.view === 'rows') bump(-1);
-});
-document.getElementById('btnNext').addEventListener('click', () => {
-  if (state.view === 'rows') bump(+1);
-});
-document.getElementById('centerBtn').addEventListener('click', () => {
-  ensureAudio();
-  if (state.view === 'tabs') goRows(state.cursor);
-  else if (state.view === 'rows') {
-    if (state.preview) hidePreview();
-    else showPreview();
-  }
-});
-
-document.getElementById('imgPicker').addEventListener('change', (e) => {
-  setImageFromFile(e.target.files?.[0]);
-  e.target.value = '';
-});
-
-document.addEventListener('change', (e) => {
-  if (e.target?.id === 'openFile') onFileOpen(e);
-});
-
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'ArrowDown') { moveCursor(1); tickFeedback(); }
-  else if (e.key === 'ArrowUp') { moveCursor(-1); tickFeedback(); }
-  else if (e.key === 'ArrowLeft' && state.view === 'rows') bump(-1);
-  else if (e.key === 'ArrowRight' && state.view === 'rows') bump(+1);
-  else if (e.key === 'Enter') document.getElementById('centerBtn').click();
-  else if (e.key === 'Escape' || e.key === 'Backspace') document.getElementById('btnMenu').click();
-  else if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); exportWorkbook(); }
-});
-
 wheel.addEventListener('wheel', (e) => {
   e.preventDefault();
   ensureAudio();
   moveCursor(e.deltaY > 0 ? 1 : -1);
   tickFeedback();
 }, { passive: false });
+
+// ====== 버튼 ======
+document.getElementById('btnMenu').addEventListener('click', () => {
+  if (document.getElementById('dlModal').classList.contains('show')) return closeDownload();
+  if (state.view === 'options')   goRows(state.currentTabIdx, 'backward');
+  else if (state.view === 'rows') goTabs();
+  else if (state.view === 'tabs') showStart();
+});
+
+document.getElementById('centerBtn').addEventListener('click', () => {
+  ensureAudio();
+  if (state.view === 'tabs')         goRows(state.rowCursor);
+  else if (state.view === 'rows')    goOptions(state.rowCursor);
+  else if (state.view === 'options') selectOption();
+});
+
+document.getElementById('btnPrev').addEventListener('click', () => { moveCursor(-1); tickFeedback(); });
+document.getElementById('btnNext').addEventListener('click', () => { moveCursor(1);  tickFeedback(); });
+document.getElementById('btnPlay').addEventListener('click', () => {
+  document.getElementById('centerBtn').click();
+});
+
+document.getElementById('btnSave').addEventListener('click', () => {
+  if (!workbook) return;
+  saveLocal();
+  dirty = false;
+  updateDirty();
+  toast('저장됨');
+});
+document.getElementById('btnExport').addEventListener('click', buildAndExport);
+
+// 파일 인풋 위임
+document.addEventListener('change', (e) => {
+  if (e.target?.id === 'openFile') onFileOpen(e);
+});
+// 키보드
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowDown')  { moveCursor(1);  tickFeedback(); }
+  else if (e.key === 'ArrowUp') { moveCursor(-1); tickFeedback(); }
+  else if (e.key === 'Enter') document.getElementById('centerBtn').click();
+  else if (e.key === 'Escape' || e.key === 'Backspace') document.getElementById('btnMenu').click();
+  else if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); document.getElementById('btnSave').click(); }
+  else if ((e.ctrlKey || e.metaKey) && e.key === 'e') { e.preventDefault(); buildAndExport(); }
+});
 
 window.addEventListener('beforeunload', (e) => {
   if (dirty) { e.preventDefault(); e.returnValue = ''; }
