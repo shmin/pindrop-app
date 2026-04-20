@@ -95,10 +95,9 @@ align-items: center; justify-content: center;
 flex-direction: column; gap: 8px; padding: 12px;
 }
 .preview.show { display: flex; }
-.preview img { max-width: 100%; max-height: 70%; object-fit: contain; border-radius: 4px; }
+.preview img { max-width: 100%; max-height: 65%; object-fit: contain; border-radius: 4px; }
 .preview .pLabel { color: #fff; font-size: 14px; font-weight: 600; text-align: center; }
 .preview .pCount { color: #ccc; font-size: 12px; font-variant-numeric: tabular-nums; }
-.preview .pHint { color: #888; font-size: 10px; }
 .preview input[type=file] { display: none; }
 .preview label.upload {
 font-size: 10px; color: #bbb; border: 1px dashed #555;
@@ -114,13 +113,34 @@ background: #2e55a8; color: #fff; border: none;
 padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;
 }
 .empty label.btn.ghost { background: transparent; color: #2e55a8; border: 1px solid #2e55a8; }
+.empty label.btn.danger { background: transparent; color: #c44; border: 1px solid #c44; font-size: 10px; }
 .empty input[type=file] { display: none; }
+
+.dlmodal {
+position: absolute; inset: 22px 0 0 0;
+background: rgba(0,0,0,.9);
+display: none;
+align-items: center; justify-content: center;
+flex-direction: column; gap: 10px; padding: 16px;
+z-index: 10;
+}
+.dlmodal.show { display: flex; }
+.dlmodal p { color: #fff; font-size: 12px; text-align: center; margin: 0; line-height: 1.5; }
+.dlmodal a.dlbtn {
+background: #2e55a8; color: #fff; padding: 8px 16px; border-radius: 6px;
+text-decoration: none; font-size: 13px; font-weight: 600;
+}
+.dlmodal button {
+background: transparent; color: #ccc; border: 1px solid #555;
+padding: 4px 12px; border-radius: 4px; font-size: 11px; cursor: pointer;
+}
 
 .toast {
 position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%);
 background: rgba(0,0,0,.75); color: #fff; font-size: 11px;
 padding: 4px 10px; border-radius: 10px; opacity: 0; transition: opacity .2s;
 pointer-events: none; white-space: nowrap; z-index: 5;
+max-width: 80%; text-align: center;
 }
 .toast.show { opacity: 1; }
 
@@ -182,6 +202,11 @@ cursor: pointer;
           <input type="file" id="imgPicker" accept="image/*" />
         </label>
       </div>
+      <div class="dlmodal" id="dlModal">
+        <p id="dlMsg">파일이 준비됐어요.</p>
+        <a class="dlbtn" id="dlLink" download>파일 다운로드</a>
+        <button onclick="closeDownload()">닫기</button>
+      </div>
       <div class="toast" id="toast"></div>
     </div>
   </div>
@@ -198,13 +223,17 @@ cursor: pointer;
 </div>
 
 <script>
-// =============================================================
-// 데이터 모델
-// workbook = {
-//   tabs: [{ title, rows: [{label, count, image}] }]
-// }
-// image: base64 data URL 또는 '' 
-// =============================================================
+window.addEventListener('error', (e) => {
+  console.error('Global error:', e.message);
+  toast('에러: ' + (e.message || 'unknown').slice(0, 60));
+});
+window.addEventListener('unhandledrejection', (e) => {
+  console.error('Promise rejection:', e.reason);
+  toast('Promise: ' + String(e.reason).slice(0, 60));
+});
+
+// 엑셀 셀당 최대 문자 수 (실제 한계 32767보다 살짝 낮게)
+const MAX_CELL_CHARS = 32000;
 
 const LS_KEY = 'ipod-wb-v1';
 const LS_FILENAME = 'ipod-filename-v1';
@@ -212,29 +241,28 @@ let workbook = null;
 let fileName = localStorage.getItem(LS_FILENAME) || 'ipod-data.xlsx';
 let dirty = false;
 
-// =============================================================
-// 상태 / 뷰
-// =============================================================
 const state = {
-  view: 'init',   // 'init' | 'tabs' | 'rows'
+  view: 'init',
   currentTabIdx: -1,
   cursor: 0,
   preview: false,
 };
 
-// =============================================================
-// 시작
-// =============================================================
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
 function start() {
   const saved = localStorage.getItem(LS_KEY);
   if (saved) {
     try {
       workbook = JSON.parse(saved);
-      dirty = true;  // 복원된 상태는 아직 파일에 반영 안 된 것
+      dirty = true;
       updateDirty();
       goTabs();
       return;
-    } catch (e) {}
+    } catch (e) {
+      console.error('복원 실패:', e);
+    }
   }
   showStart();
 }
@@ -242,17 +270,17 @@ function start() {
 function showStart() {
   state.view = 'init';
   setTitle('iPod');
+  const hasBackup = !!localStorage.getItem(LS_KEY);
   renderEmpty(`
     <div class="big">엑셀 파일로 시작</div>
-    <div>기존 파일을 열거나 새 파일을 만들 수 있어요.</div>
+    <div>기존 파일을 열거나 새 파일을 만들어요.</div>
     <label class="btn">
       파일 열기
       <input type="file" id="openFile" accept=".xlsx,.xls" />
     </label>
-    <label class="btn ghost" id="newFileBtn" onclick="createNew()">새로 만들기</label>
+    <button class="btn ghost" onclick="createNew()">새로 만들기</button>
+    ${hasBackup ? '<br><button class="btn danger" onclick="resetAll()">저장된 데이터 삭제</button>' : ''}
   `);
-  const input = document.getElementById('openFile');
-  input.addEventListener('change', onFileOpen);
 }
 
 async function onFileOpen(e) {
@@ -268,7 +296,8 @@ async function onFileOpen(e) {
     updateDirty();
     goTabs();
   } catch (err) {
-    toast('파일 읽기 실패: ' + err.message);
+    console.error(err);
+    toast('파일 읽기 실패');
   }
 }
 
@@ -288,30 +317,51 @@ function createNew() {
   goTabs();
 }
 
-// =============================================================
-// 엑셀 파싱: 메인 시트들 + '_images' 시트
-// =============================================================
+function resetAll() {
+  if (!confirm('브라우저에 저장된 모든 데이터를 삭제합니다.\n정말 진행할까요?')) return;
+  localStorage.removeItem(LS_KEY);
+  localStorage.removeItem(LS_FILENAME);
+  workbook = null;
+  fileName = 'ipod-data.xlsx';
+  dirty = false;
+  updateDirty();
+  showStart();
+}
+
+// ==============================================================
+// 엑셀 파싱 — 이미지는 청크로 저장되어 있음
+// _images 시트: [tab, label, part, dataChunk]
+// 같은 (tab, label) 의 part 순서대로 합쳐야 완전한 dataUrl
+// ==============================================================
 function parseWorkbook(arrayBuffer) {
   const wb = XLSX.read(arrayBuffer, { type: 'array' });
   const tabs = [];
-  const imageMap = {};  // { "tabName::label": base64 }
+  const imageChunks = {};  // { "tab::label": { part: chunk, ... } }
 
-  // _images 시트가 있으면 먼저 파싱
   if (wb.SheetNames.includes('_images')) {
     const imgSheet = wb.Sheets['_images'];
     const imgRows = XLSX.utils.sheet_to_json(imgSheet, { header: 1 });
-    // 1행: 헤더, 2행부터: [tabName, label, dataUrl]
     for (let i = 1; i < imgRows.length; i++) {
-      const [t, l, d] = imgRows[i] || [];
-      if (t && l && d) imageMap[`${t}::${l}`] = d;
+      const [t, l, p, d] = imgRows[i] || [];
+      if (t == null || l == null || d == null) continue;
+      const key = `${t}::${l}`;
+      if (!imageChunks[key]) imageChunks[key] = {};
+      imageChunks[key][Number(p) || 0] = String(d);
     }
   }
+
+  // 청크 합치기
+  const imageMap = {};
+  Object.keys(imageChunks).forEach(key => {
+    const parts = imageChunks[key];
+    const indices = Object.keys(parts).map(Number).sort((a, b) => a - b);
+    imageMap[key] = indices.map(i => parts[i]).join('');
+  });
 
   wb.SheetNames.forEach(name => {
     if (name === '_images') return;
     const sheet = wb.Sheets[name];
     const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-    // 1행 헤더 스킵
     const data = rows.slice(1)
       .map(r => ({
         label: String(r?.[0] ?? '').trim(),
@@ -328,53 +378,109 @@ function parseWorkbook(arrayBuffer) {
   return { tabs };
 }
 
-// =============================================================
-// 엑셀 저장 (Export) — 이미지는 '_images' 시트에 base64로
-// =============================================================
+// ==============================================================
+// 엑셀 Export — 이미지를 청크로 잘라서 저장
+// ==============================================================
 function exportWorkbook() {
   if (!workbook) return;
-  const wb = XLSX.utils.book_new();
+  try {
+    toast('Export 중...');
+    const wb = XLSX.utils.book_new();
 
-  // 메인 시트들: label, count
-  workbook.tabs.forEach(tab => {
-    const aoa = [['label', 'count'],
-      ...tab.rows.map(r => [r.label, r.count])];
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-    XLSX.utils.book_append_sheet(wb, ws, tab.title);
-  });
-
-  // 이미지 시트
-  const imgAoa = [['tab', 'label', 'dataUrl']];
-  workbook.tabs.forEach(tab => {
-    tab.rows.forEach(r => {
-      if (r.image) imgAoa.push([tab.title, r.label, r.image]);
+    // 메인 시트들
+    workbook.tabs.forEach(tab => {
+      const aoa = [['label', 'count'],
+        ...tab.rows.map(r => [r.label, r.count])];
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      XLSX.utils.book_append_sheet(wb, ws, tab.title);
     });
-  });
-  const imgWs = XLSX.utils.aoa_to_sheet(imgAoa);
-  // _images 탭 숨기기
-  imgWs['!hidden'] = true;
-  XLSX.utils.book_append_sheet(wb, imgWs, '_images');
-  // 숨김 속성
-  if (wb.Workbook == null) wb.Workbook = { Sheets: [] };
-  wb.Workbook.Sheets = wb.SheetNames.map(n => ({
-    name: n,
-    Hidden: n === '_images' ? 1 : 0
-  }));
 
-  XLSX.writeFile(wb, fileName || 'ipod-data.xlsx');
-  dirty = false;
-  updateDirty();
-  toast('Exported: ' + fileName);
+    // 이미지 시트 (청크로 분할)
+    const imgAoa = [['tab', 'label', 'part', 'dataChunk']];
+    workbook.tabs.forEach(tab => {
+      tab.rows.forEach(r => {
+        if (!r.image) return;
+        const img = r.image;
+        const chunks = Math.ceil(img.length / MAX_CELL_CHARS);
+        for (let i = 0; i < chunks; i++) {
+          const chunk = img.slice(i * MAX_CELL_CHARS, (i + 1) * MAX_CELL_CHARS);
+          imgAoa.push([tab.title, r.label, i, chunk]);
+        }
+      });
+    });
+    const imgWs = XLSX.utils.aoa_to_sheet(imgAoa);
+    XLSX.utils.book_append_sheet(wb, imgWs, '_images');
+
+    if (wb.Workbook == null) wb.Workbook = { Sheets: [] };
+    wb.Workbook.Sheets = wb.SheetNames.map(n => ({
+      name: n,
+      Hidden: n === '_images' ? 1 : 0
+    }));
+
+    const arrayBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([arrayBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+
+    const fname = fileName || 'ipod-data.xlsx';
+
+    // iOS Web Share
+    if (navigator.share && navigator.canShare) {
+      const shareFile = new File([blob], fname, { type: blob.type });
+      if (navigator.canShare({ files: [shareFile] })) {
+        navigator.share({ files: [shareFile], title: fname })
+          .then(() => { dirty = false; updateDirty(); toast('공유됨'); })
+          .catch((err) => {
+            if (err.name !== 'AbortError') fallbackDownload(blob, fname);
+          });
+        return;
+      }
+    }
+
+    fallbackDownload(blob, fname);
+
+  } catch (err) {
+    console.error('Export 실패:', err);
+    toast('Export 실패: ' + String(err.message || err).slice(0, 60));
+  }
 }
 
-// =============================================================
-// 로컬 자동 저장
-// =============================================================
+function fallbackDownload(blob, fname) {
+  const url = URL.createObjectURL(blob);
+
+  if (isIOS) {
+    const link = document.getElementById('dlLink');
+    link.href = url;
+    link.download = fname;
+    document.getElementById('dlMsg').innerHTML =
+      `<b>${esc(fname)}</b> 준비됨<br>` +
+      `아래 버튼을 <b>길게 눌러</b> "다운로드 링크된 파일"<br>` +
+      `또는 탭 후 공유 → 파일에 저장`;
+    document.getElementById('dlModal').classList.add('show');
+    dirty = false;
+    updateDirty();
+  } else {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fname;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    dirty = false;
+    updateDirty();
+    toast('Exported');
+  }
+}
+
+function closeDownload() {
+  document.getElementById('dlModal').classList.remove('show');
+}
+
 function saveLocal() {
   try {
     localStorage.setItem(LS_KEY, JSON.stringify(workbook));
   } catch (e) {
-    // 용량 초과 시 (이미지 많으면 5MB 한계)
     toast('브라우저 저장 용량 초과');
   }
 }
@@ -388,19 +494,58 @@ function markDirty() {
 function updateDirty() {
   const dot = document.getElementById('dirtyDot');
   dot.classList.toggle('clean', !dirty);
-  dot.title = dirty ? '저장되지 않은 변경사항 (EXPORT 누르세요)' : '저장됨';
+  dot.title = dirty ? '저장되지 않음' : '저장됨';
 }
 
-// =============================================================
-// 뷰 전환
-// =============================================================
+async function resizeImage(file, maxDim = 800, quality = 0.8) {
+  const dataUrl = await new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => res(fr.result);
+    fr.onerror = () => rej(new Error('read fail'));
+    fr.readAsDataURL(file);
+  });
+  const img = await new Promise((res, rej) => {
+    const image = new Image();
+    image.onload = () => res(image);
+    image.onerror = () => rej(new Error('image load fail'));
+    image.src = dataUrl;
+  });
+  let { width, height } = img;
+  const scale = Math.min(1, maxDim / Math.max(width, height));
+  width = Math.round(width * scale);
+  height = Math.round(height * scale);
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+  return canvas.toDataURL('image/jpeg', quality);
+}
+
+async function setImageFromFile(file) {
+  if (!file) return;
+  try {
+    toast('이미지 처리 중…');
+    const resized = await resizeImage(file, 800, 0.8);
+    const row = currentRow();
+    if (!row) return;
+    row.image = resized;
+    markDirty();
+    updatePreview();
+    renderRows();
+    toast('이미지 설정됨');
+  } catch (err) {
+    console.error(err);
+    toast('이미지 처리 실패');
+  }
+}
+
 async function goTabs() {
   state.view = 'tabs';
   state.cursor = 0;
   hidePreview();
   setTitle(fileName.replace(/\.xlsx?$/,'').slice(0,18) || 'iPod');
   if (!workbook.tabs.length) {
-    return renderEmpty('탭이 없어요.<br>엑셀에 시트를 추가하세요.');
+    return renderEmpty('탭이 없어요.');
   }
   renderList(workbook.tabs.map(t => ({
     label: t.title,
@@ -416,12 +561,12 @@ async function goRows(idx) {
   const tab = workbook.tabs[idx];
   setTitle(tab.title.slice(0, 18));
   if (!tab.rows.length) {
-    return renderEmpty('행이 없어요.<br>엑셀에서 A열=이름, B열=숫자로 채우세요.');
+    return renderEmpty('행이 없어요.<br>A: 이름 / B: 숫자');
   }
   renderRows();
 }
 
-function currentTab() { return workbook.tabs[state.currentTabIdx]; }
+function currentTab() { return workbook?.tabs[state.currentTabIdx]; }
 function currentRow() { return currentTab()?.rows[state.cursor]; }
 
 function bump(delta) {
@@ -435,30 +580,6 @@ function bump(delta) {
   toast(delta > 0 ? `+${delta}` : `${delta}`);
 }
 
-async function setImageFromFile(file) {
-  if (!file) return;
-  // 너무 큰 이미지는 경고 (용량 절약)
-  if (file.size > 2 * 1024 * 1024) {
-    if (!confirm('이미지가 2MB를 넘어요. 계속할까요?\n(브라우저 저장 한계에 가까워질 수 있음)')) return;
-  }
-  const dataUrl = await new Promise((res, rej) => {
-    const fr = new FileReader();
-    fr.onload = () => res(fr.result);
-    fr.onerror = () => rej(new Error('read fail'));
-    fr.readAsDataURL(file);
-  });
-  const row = currentRow();
-  if (!row) return;
-  row.image = dataUrl;
-  markDirty();
-  updatePreview();
-  renderRows();
-  toast('이미지 설정됨');
-}
-
-// =============================================================
-// 렌더
-// =============================================================
 const listUl = document.getElementById('listUl');
 const emptyView = document.getElementById('emptyView');
 const previewView = document.getElementById('previewView');
@@ -475,7 +596,6 @@ function renderEmpty(html) {
   emptyView.style.display = 'block';
   hidePreview();
   emptyView.innerHTML = html;
-  // 파일 열기 인풋이 렌더된 경우 바인딩
   const openF = document.getElementById('openFile');
   if (openF) openF.addEventListener('change', onFileOpen);
 }
@@ -550,12 +670,9 @@ function toast(msg) {
   toastEl.textContent = msg;
   toastEl.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1200);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2000);
 }
 
-// =============================================================
-// 휠 & 버튼
-// =============================================================
 const wheel = document.getElementById('wheel');
 let dragging = false, lastAngle = 0, accumAngle = 0;
 const DEG_PER_ITEM = 24;
@@ -604,33 +721,33 @@ function moveCursor(delta) {
 }
 
 document.getElementById('btnMenu').addEventListener('click', () => {
+  if (document.getElementById('dlModal').classList.contains('show')) return closeDownload();
   if (state.preview) return hidePreview();
   if (state.view === 'rows') goTabs();
   else if (state.view === 'tabs') showStart();
 });
-document.getElementById('btnPlay').addEventListener('click', () => {
-  exportWorkbook();
-});
+document.getElementById('btnPlay').addEventListener('click', exportWorkbook);
 document.getElementById('btnPrev').addEventListener('click', () => {
   if (state.view === 'rows') bump(-1);
 });
 document.getElementById('btnNext').addEventListener('click', () => {
   if (state.view === 'rows') bump(+1);
 });
-
 document.getElementById('centerBtn').addEventListener('click', () => {
-  if (state.view === 'tabs') {
-    goRows(state.cursor);
-  } else if (state.view === 'rows') {
+  if (state.view === 'tabs') goRows(state.cursor);
+  else if (state.view === 'rows') {
     if (state.preview) hidePreview();
     else showPreview();
   }
 });
 
-// 이미지 교체 (미리보기 화면에서)
 document.getElementById('imgPicker').addEventListener('change', (e) => {
   setImageFromFile(e.target.files?.[0]);
   e.target.value = '';
+});
+
+document.addEventListener('change', (e) => {
+  if (e.target?.id === 'openFile') onFileOpen(e);
 });
 
 document.addEventListener('keydown', (e) => {
@@ -648,7 +765,6 @@ wheel.addEventListener('wheel', (e) => {
   moveCursor(e.deltaY > 0 ? 1 : -1);
 }, { passive: false });
 
-// 페이지 떠날 때 미저장 경고
 window.addEventListener('beforeunload', (e) => {
   if (dirty) { e.preventDefault(); e.returnValue = ''; }
 });
