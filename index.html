@@ -5,7 +5,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <title>iPod × Local Excel</title>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <style>
   :root {
     --bg: #d9d5cc;
@@ -27,21 +27,15 @@
     color: #1a1a1a;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
-    /* iOS safe area 대응 */
     padding: env(safe-area-inset-top) env(safe-area-inset-right)
              env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
 
-/* ── iPod 전체 레이아웃: 화면 꽉 차게 ── */
 .ipod {
-width: 100%;
-height: 100%;
+width: 100%; height: 100%;
 display: flex; flex-direction: column;
-align-items: stretch;
-padding: 12px 10px 10px;
-gap: 8px;
+padding: 12px 10px 10px; gap: 8px;
 }
-
 .ipod-body {
 flex: 1;
 background: linear-gradient(180deg, #fbf9f4 0%, #eae6dc 100%);
@@ -52,29 +46,22 @@ inset 0 1px 0 rgba(255,255,255,.9),
 inset 0 -2px 0 rgba(0,0,0,.06),
 0 12px 30px rgba(30,30,30,.2),
 0 0 0 1px var(–body-edge);
-display: flex; flex-direction: column;
-min-height: 0;
+display: flex; flex-direction: column; min-height: 0;
 }
-
-/* ── 스크린: flex 1, 휠은 작게 ── */
 .screen {
-flex: 1;
-min-height: 0;
+flex: 1; min-height: 0;
 border-radius: 6px;
 background: linear-gradient(180deg, var(–screen) 0%, var(–screen-2) 100%);
 box-shadow:
 inset 0 2px 6px rgba(0,0,0,.25),
 inset 0 -1px 0 rgba(255,255,255,.3),
 0 0 0 4px #1a1a1a, 0 0 0 5px #3a3a3a;
-overflow: hidden;
-position: relative;
+overflow: hidden; position: relative;
 }
-
 .titlebar {
 height: 26px; background: var(–bar); color: #fff;
 display: flex; align-items: center; justify-content: center;
 padding: 0 10px; font-size: 13px; font-weight: 700; position: relative;
-text-align: center;
 }
 .titlebar::before {
 content: “”; position: absolute; inset: 0 0 auto 0; height: 45%;
@@ -82,12 +69,7 @@ background: linear-gradient(180deg, rgba(255,255,255,.35), rgba(255,255,255,0));
 }
 .titlebar .t-text { position: relative; z-index: 1; }
 
-/* ── 뷰 스택 (슬라이드 애니메이션) ── */
-.view-stack {
-position: absolute;
-top: 26px; bottom: 0; left: 0; right: 0;
-overflow: hidden;
-}
+.view-stack { position: absolute; top: 26px; bottom: 0; left: 0; right: 0; overflow: hidden; }
 .view {
 position: absolute; inset: 0;
 background: linear-gradient(180deg, var(–screen) 0%, var(–screen-2) 100%);
@@ -101,7 +83,6 @@ will-change: transform;
 .view.slide-out-right { transform: translateX(100%); }
 .view.show            { transform: translateX(0); }
 
-/* ── 리스트 ── */
 .list { position: absolute; inset: 0; overflow: hidden; }
 .list ul { list-style: none; margin: 0; padding: 0; transition: transform .18s cubic-bezier(.2,.8,.2,1); }
 .list li {
@@ -127,7 +108,6 @@ white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 .list li.active .meta, .list li.active .chev { color: rgba(255,255,255,.9); }
 .list li.active .thumb { border-color: rgba(255,255,255,.4); }
 
-/* ── 옵션 화면 (view 안에 들어가는 컨텐츠) ── */
 .options-body { position: absolute; inset: 0; overflow: hidden; }
 .options-body ul { list-style: none; margin: 0; padding: 0; transition: transform .18s cubic-bezier(.2,.8,.2,1); }
 .options-body li {
@@ -141,7 +121,6 @@ min-height: 44px;
 .options-body li.active { background: var(–bar); color: #fff; }
 .options-body li.active .check { color: #fff; }
 
-/* ── 초기 화면 ── */
 .empty { padding: 24px 18px; font-size: 14px; color: #333; text-align: center; line-height: 1.6; }
 .empty .big { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
 .empty button, .empty label.btn {
@@ -153,7 +132,6 @@ padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px;
 .empty label.btn.danger { background: transparent; color: #c44; border: 1px solid #c44; font-size: 12px; }
 .empty input[type=file] { display: none; }
 
-/* ── 다운로드 모달 ── */
 .dlmodal {
 position: absolute; inset: 26px 0 0 0;
 background: rgba(0,0,0,.9);
@@ -180,11 +158,9 @@ max-width: 80%; text-align: center;
 }
 .toast.show { opacity: 1; }
 
-/* ── 휠: 작게 ── */
 .wheel-wrap {
 display: flex; align-items: center; justify-content: center;
-padding-top: 12px;
-flex-shrink: 0;
+padding-top: 12px; flex-shrink: 0;
 }
 .wheel {
 width: min(58%, 240px);
@@ -199,8 +175,7 @@ inset 0 -6px 14px rgba(0,0,0,.12),
 cursor: grab; touch-action: none; overflow: hidden;
 }
 .wheel::before {
-content: “”;
-position: absolute; inset: 6%; border-radius: 50%;
+content: “”; position: absolute; inset: 6%; border-radius: 50%;
 background: repeating-conic-gradient(
 from 0deg,
 rgba(0,0,0,0) 0deg, rgba(0,0,0,0) 3deg,
@@ -252,47 +227,26 @@ cursor: pointer; z-index: 3;
 }
 .center-btn:active { box-shadow: inset 0 2px 4px rgba(0,0,0,.12), 0 0 0 1px var(–wheel-edge); }
 
-/* ── 하단 버튼 패널 ── */
 .btn-panel {
 display: flex; gap: 10px;
 padding: 12px 14px 14px;
 background: linear-gradient(180deg, #eae6dc 0%, #ddd9d0 100%);
 border-radius: 18px;
-box-shadow:
-0 10px 24px rgba(30,30,30,.18),
-0 0 0 1px var(–body-edge);
+box-shadow: 0 10px 24px rgba(30,30,30,.18), 0 0 0 1px var(–body-edge);
 flex-shrink: 0;
 }
 .btn-panel button {
-flex: 1;
-padding: 12px 0;
-border: none;
-border-radius: 12px;
-font-size: 13px;
-font-weight: 700;
-letter-spacing: .08em;
-cursor: pointer;
-position: relative;
-box-shadow:
-inset 0 1px 0 rgba(255,255,255,.7),
-0 2px 4px rgba(0,0,0,.15);
+flex: 1; padding: 12px 0;
+border: none; border-radius: 12px;
+font-size: 13px; font-weight: 700; letter-spacing: .08em;
+cursor: pointer; position: relative;
+box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 2px 4px rgba(0,0,0,.15);
 transition: transform .08s, box-shadow .08s;
 }
-.btn-panel button:active {
-transform: translateY(1px);
-box-shadow: inset 0 2px 3px rgba(0,0,0,.15);
-}
-.btn-save {
-background: linear-gradient(180deg, #f0eee8 0%, #dbd7ce 100%);
-color: #3a3a3a;
-}
-.btn-export {
-background: linear-gradient(180deg, #4a77c9 0%, #2e55a8 100%);
-color: #fff;
-box-shadow:
-inset 0 1px 0 rgba(255,255,255,.3),
-0 2px 4px rgba(46,85,168,.4) !important;
-}
+.btn-panel button:active { transform: translateY(1px); box-shadow: inset 0 2px 3px rgba(0,0,0,.15); }
+.btn-save   { background: linear-gradient(180deg, #f0eee8 0%, #dbd7ce 100%); color: #3a3a3a; }
+.btn-export { background: linear-gradient(180deg, #4a77c9 0%, #2e55a8 100%); color: #fff;
+box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 2px 4px rgba(46,85,168,.4) !important; }
 .btn-panel .dot {
 position: absolute; top: 7px; right: 8px;
 width: 7px; height: 7px; border-radius: 50%;
@@ -300,14 +254,10 @@ background: #ff9d5a; box-shadow: 0 0 4px rgba(255,180,80,.8);
 }
 .btn-panel .dot.clean { background: #a0e878; box-shadow: 0 0 4px rgba(160,230,120,.8); }
 
-/* 가로 모드 대응 */
 @media (orientation: landscape) and (max-height: 500px) {
 .ipod { flex-direction: row; padding: 8px; }
 .ipod-body { flex: 1.5; }
-.btn-panel {
-flex-direction: column; border-radius: 18px;
-min-width: 100px;
-}
+.btn-panel { flex-direction: column; min-width: 100px; }
 }
 </style>
 
@@ -317,21 +267,16 @@ min-width: 100px;
 <div class="ipod">
   <div class="ipod-body">
     <div class="screen">
-      <div class="titlebar">
-        <span class="t-text" id="screenTitle">iPod</span>
+      <div class="titlebar"><span class="t-text" id="screenTitle">iPod</span></div>
+      <div class="view-stack" id="viewStack"></div>
+      <div class="dlmodal" id="dlModal">
+        <p id="dlMsg">파일이 준비됐어요.</p>
+        <a class="dlbtn" id="dlLink" download>파일 다운로드</a>
+        <button onclick="closeDownload()">닫기</button>
       </div>
+    </div>
 
 ```
-  <!-- 뷰 스택: 여러 view가 들어가고 슬라이드로 전환 -->
-  <div class="view-stack" id="viewStack"></div>
-
-  <div class="dlmodal" id="dlModal">
-    <p id="dlMsg">파일이 준비됐어요.</p>
-    <a class="dlbtn" id="dlLink" download>파일 다운로드</a>
-    <button onclick="closeDownload()">닫기</button>
-  </div>
-</div>
-
 <div class="wheel-wrap">
   <div class="wheel" id="wheel">
     <span class="tickmark" id="tickmark"></span>
@@ -359,21 +304,15 @@ min-width: 100px;
 <div class="toast" id="toast"></div>
 
 <script>
-window.addEventListener('error', (e) => {
-  toast('에러: ' + (e.message || '').slice(0, 60));
-});
-window.addEventListener('unhandledrejection', (e) => {
-  toast('에러: ' + String(e.reason).slice(0, 60));
-});
+window.addEventListener('error', (e) => toast('에러: ' + (e.message || '').slice(0, 60)));
+window.addEventListener('unhandledrejection', (e) => toast('에러: ' + String(e.reason).slice(0, 60)));
 
-const MAX_CELL_CHARS = 32000;
-const LS_KEY = 'ipod-wb-v2';
-const LS_FILENAME = 'ipod-filename-v2';
+const LS_KEY = 'ipod-wb-v3';  // 구조가 바뀌었으니 v3
+const LS_FILENAME = 'ipod-filename-v3';
 let workbook = null;
 let fileName = localStorage.getItem(LS_FILENAME) || 'ipod-data.xlsx';
 let dirty = false;
 
-// view: 'init' | 'tabs' | 'rows' | 'options'
 const state = {
   view: 'init',
   currentTabIdx: -1,
@@ -384,7 +323,7 @@ const state = {
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
   || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-// ====== 오디오 / 피드백 ======
+// ====== 오디오/피드백 ======
 let audioCtx = null;
 function ensureAudio() {
   if (!audioCtx) {
@@ -435,9 +374,9 @@ function rotateDisk(deg) {
   wheel.style.setProperty('--rot', diskRot + 'deg');
 }
 
-// ====== 뷰 스택 (슬라이드 전환) ======
+// ====== 뷰 스택 ======
 const viewStack = document.getElementById('viewStack');
-let currentView = null;      // DOM element
+let currentView = null;
 let animating = false;
 const ANIM_DUR = 280;
 
@@ -448,28 +387,17 @@ function createView(htmlContent) {
   return v;
 }
 
-// direction: 'forward' (새 뷰가 오른쪽에서 들어옴), 'backward' (왼쪽에서)
 function transitionTo(newView, direction = 'forward') {
-  if (animating) {
-    // 빠르게 연타하면 진행중인 애니 취소하고 강제 세팅
-    if (currentView) currentView.remove();
-  }
+  if (animating && currentView) currentView.remove();
   animating = true;
   const old = currentView;
   currentView = newView;
 
-  // 새 뷰를 스택에 붙이고 초기 위치 설정
-  if (direction === 'forward') {
-    newView.classList.add('slide-in-right');
-  } else {
-    newView.classList.add('slide-in-left');
-  }
+  if (direction === 'forward') newView.classList.add('slide-in-right');
+  else newView.classList.add('slide-in-left');
   viewStack.appendChild(newView);
-
-  // 강제 reflow 한 뒤에 클래스 변경해야 transition이 발동됨
   void newView.offsetWidth;
 
-  // 새 뷰를 show, 기존 뷰를 반대 방향으로 밀어냄
   newView.classList.remove('slide-in-right', 'slide-in-left');
   newView.classList.add('show');
 
@@ -484,7 +412,6 @@ function transitionTo(newView, direction = 'forward') {
     animating = false;
   }, ANIM_DUR);
 }
-
 function setFirstView(newView) {
   if (currentView) currentView.remove();
   currentView = newView;
@@ -522,7 +449,6 @@ function showStart() {
   const v = createView(html);
   if (currentView) transitionTo(v, 'backward');
   else setFirstView(v);
-
   setTimeout(() => {
     const inp = v.querySelector('#openFile');
     if (inp) inp.addEventListener('change', onFileOpen);
@@ -535,13 +461,17 @@ async function onFileOpen(e) {
   fileName = file.name;
   localStorage.setItem(LS_FILENAME, fileName);
   try {
+    toast('파일 읽는 중...');
     const ab = await file.arrayBuffer();
-    workbook = parseWorkbook(ab);
+    workbook = await parseWorkbook(ab);
     dirty = false;
     saveLocal();
     updateDirty();
     goTabs();
-  } catch(err) { toast('파일 읽기 실패: ' + err.message); }
+  } catch(err) {
+    console.error(err);
+    toast('파일 읽기 실패: ' + err.message);
+  }
 }
 
 function createNew() {
@@ -571,74 +501,154 @@ function resetAll() {
   showStart();
 }
 
-// ====== 파싱 ======
-function parseWorkbook(arrayBuffer) {
-  const wb = XLSX.read(arrayBuffer, { type: 'array' });
-  const imageChunks = {};
-
-  if (wb.SheetNames.includes('_images')) {
-    const rows = XLSX.utils.sheet_to_json(wb.Sheets['_images'], { header: 1 });
-    for (let i = 1; i < rows.length; i++) {
-      const [t, l, p, d] = rows[i] || [];
-      if (t == null || l == null || d == null) continue;
-      const key = `${t}::${l}`;
-      if (!imageChunks[key]) imageChunks[key] = {};
-      imageChunks[key][Number(p) || 0] = String(d);
-    }
-  }
-  const imageMap = {};
-  Object.keys(imageChunks).forEach(key => {
-    const parts = imageChunks[key];
-    imageMap[key] = Object.keys(parts).map(Number).sort((a,b)=>a-b).map(i=>parts[i]).join('');
-  });
+// ============================================================
+// ExcelJS로 파싱 (이미지 포함)
+// 시트 구조: A=label, B=value, C=image, D=option1, E=option2, ...
+// ============================================================
+async function parseWorkbook(arrayBuffer) {
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(arrayBuffer);
 
   const tabs = [];
-  wb.SheetNames.forEach(name => {
-    if (name === '_images') return;
-    const rows = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1 });
-    const data = rows.slice(1).map(r => {
-      const label = String(r?.[0] ?? '').trim();
-      const value = String(r?.[1] ?? '').trim();
-      const options = r.slice(2).map(v => String(v ?? '').trim()).filter(v => v !== '');
-      return { label, value, options, image: imageMap[`${name}::${label}`] || '' };
-    }).filter(r => r.label !== '');
-    tabs.push({ title: name, rows: data });
+  wb.eachSheet((sheet) => {
+    // 이미지: sheet.getImages() 는 이미지 목록 반환
+    // 각 이미지: { imageId, range: { tl, br } } — tl.nativeRow (0-index)
+    const imagesByRow = {};
+    const imgList = sheet.getImages() || [];
+    imgList.forEach((img) => {
+      // tl.nativeRow가 0-index. 엑셀에선 헤더가 1행이므로 데이터 행은 row 2부터
+      const rowNum = (img.range?.tl?.nativeRow ?? 0) + 1;  // 1-index로
+      const media = wb.model.media.find(m => m.index === img.imageId);
+      if (!media) return;
+      // media.buffer 또는 media.base64 가 있음 (버전에 따라)
+      const dataUrl = mediaToDataUrl(media);
+      if (dataUrl) imagesByRow[rowNum] = dataUrl;
+    });
+
+    const rows = [];
+    // 1행은 헤더 가정, 2행부터
+    const lastRow = sheet.rowCount;
+    for (let r = 2; r <= lastRow; r++) {
+      const row = sheet.getRow(r);
+      const label = cellText(row.getCell(1));
+      if (!label) continue;
+      const value = cellText(row.getCell(2));
+      // D(4)열부터 옵션들
+      const options = [];
+      for (let c = 4; c <= row.cellCount; c++) {
+        const v = cellText(row.getCell(c));
+        if (v) options.push(v);
+      }
+      rows.push({
+        label, value, options,
+        image: imagesByRow[r] || ''
+      });
+    }
+    tabs.push({ title: sheet.name, rows });
   });
 
   if (!tabs.length) tabs.push({ title: 'Sheet1', rows: [] });
   return { tabs };
 }
 
-// ====== Export ======
-function buildAndExport() {
+function cellText(cell) {
+  const v = cell?.value;
+  if (v == null) return '';
+  if (typeof v === 'object') {
+    // rich text, formula, etc
+    if (v.richText) return v.richText.map(t => t.text).join('').trim();
+    if (v.result != null) return String(v.result).trim();
+    if (v.text != null) return String(v.text).trim();
+    return '';
+  }
+  return String(v).trim();
+}
+
+function mediaToDataUrl(media) {
+  try {
+    // 이미지 타입
+    const ext = (media.extension || 'png').toLowerCase();
+    const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg'
+               : ext === 'png' ? 'image/png'
+               : ext === 'gif' ? 'image/gif'
+               : 'image/png';
+
+    let base64 = '';
+    if (media.buffer) {
+      // ArrayBuffer → base64
+      const bytes = new Uint8Array(media.buffer);
+      let binary = '';
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      base64 = btoa(binary);
+    } else if (media.base64) {
+      base64 = media.base64;
+    } else {
+      return '';
+    }
+    return `data:${mime};base64,${base64}`;
+  } catch(e) {
+    console.error('이미지 변환 실패', e);
+    return '';
+  }
+}
+
+// ============================================================
+// ExcelJS로 Export (실제 이미지 삽입)
+// ============================================================
+async function buildAndExport() {
   if (!workbook) return;
   try {
     toast('Export 중...');
-    const wb = XLSX.utils.book_new();
+    const wb = new ExcelJS.Workbook();
 
-    workbook.tabs.forEach(tab => {
+    for (const tab of workbook.tabs) {
+      const ws = wb.addWorksheet(tab.title);
       const maxOpts = Math.max(0, ...tab.rows.map(r => r.options.length));
-      const header = ['label', 'value', ...Array.from({length: maxOpts}, (_,i) => `option${i+1}`)];
-      const aoa = [header, ...tab.rows.map(r => [r.label, r.value, ...r.options])];
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), tab.title);
-    });
 
-    const imgAoa = [['tab','label','part','dataChunk']];
-    workbook.tabs.forEach(tab => {
-      tab.rows.forEach(r => {
-        if (!r.image) return;
-        const chunks = Math.ceil(r.image.length / MAX_CELL_CHARS);
-        for (let i = 0; i < chunks; i++) {
-          imgAoa.push([tab.title, r.label, i, r.image.slice(i*MAX_CELL_CHARS,(i+1)*MAX_CELL_CHARS)]);
+      // 헤더
+      const header = ['label', 'value', 'image', ...Array.from({length: maxOpts}, (_,i) => `option${i+1}`)];
+      ws.addRow(header);
+
+      // 열 너비
+      ws.getColumn(1).width = 14;   // label
+      ws.getColumn(2).width = 14;   // value
+      ws.getColumn(3).width = 12;   // image
+      for (let c = 4; c < 4 + maxOpts; c++) ws.getColumn(c).width = 14;
+
+      // 데이터 행
+      for (let i = 0; i < tab.rows.length; i++) {
+        const r = tab.rows[i];
+        const rowData = [r.label, r.value, '', ...r.options];
+        const row = ws.addRow(rowData);
+        row.height = 60;  // 이미지를 위한 행 높이
+
+        // 이미지가 있으면 C열(3)에 삽입
+        if (r.image) {
+          const imgInfo = dataUrlToBuffer(r.image);
+          if (imgInfo) {
+            const imageId = wb.addImage({
+              buffer: imgInfo.buffer,
+              extension: imgInfo.ext,
+            });
+            // 엑셀 rowIndex는 1-index, 헤더가 1행, 데이터 첫행이 2행
+            const rowIdx = i + 2;  // 1-index
+            // ExcelJS의 addImage는 "0-indexed" 좌표 사용
+            ws.addImage(imageId, {
+              tl: { col: 2, row: rowIdx - 1 },  // C열=2, row는 0-index
+              ext: { width: 75, height: 75 }
+            });
+          }
         }
-      });
-    });
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(imgAoa), '_images');
-    if (!wb.Workbook) wb.Workbook = { Sheets: [] };
-    wb.Workbook.Sheets = wb.SheetNames.map(n => ({ name: n, Hidden: n === '_images' ? 1 : 0 }));
+      }
 
-    const ab = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([ab], {
+      // 헤더 스타일
+      const headerRow = ws.getRow(1);
+      headerRow.font = { bold: true };
+      headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8E8E8' } };
+    }
+
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     });
     const fname = fileName || 'ipod-data.xlsx';
@@ -654,7 +664,24 @@ function buildAndExport() {
     }
     fallbackDownload(blob, fname);
   } catch(err) {
+    console.error(err);
     toast('Export 실패: ' + String(err.message).slice(0, 50));
+  }
+}
+
+// data:image/jpeg;base64,XXX → { buffer: Uint8Array, ext: 'jpeg' }
+function dataUrlToBuffer(dataUrl) {
+  try {
+    const m = dataUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+    if (!m) return null;
+    const ext = m[1] === 'jpg' ? 'jpeg' : m[1];
+    const binary = atob(m[2]);
+    const buffer = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) buffer[i] = binary.charCodeAt(i);
+    return { buffer, ext };
+  } catch(e) {
+    console.error(e);
+    return null;
   }
 }
 
@@ -687,7 +714,7 @@ function updateDirty() {
   dot.classList.toggle('clean', !dirty);
 }
 
-// ====== 뷰 전환 (애니메이션 포함) ======
+// ====== 뷰 전환 ======
 function goTabs(initial) {
   const wasDeeper = (state.view === 'rows' || state.view === 'options');
   state.view = 'tabs';
@@ -706,13 +733,9 @@ function goTabs(initial) {
         <span class="chev">›</span>
       </li>`).join('')
   }</ul></div>`;
-
   const v = createView(html);
-  const dir = wasDeeper ? 'backward' : 'forward';
   if (initial) setFirstView(v);
-  else transitionTo(v, dir);
-
-  // cursor 포지션 동기화용 리스트 ref
+  else transitionTo(v, wasDeeper ? 'backward' : 'forward');
   setTimeout(() => applyListCursor(), ANIM_DUR + 20);
 }
 
@@ -724,10 +747,9 @@ function goRows(idx, direction = 'forward') {
   setTitle(tab.title.slice(0, 24));
 
   if (!tab.rows.length) {
-    showEmptyView('행이 없어요.<br>A: 이름  B: 현재값  C~: 옵션들', direction);
+    showEmptyView('행이 없어요.<br>A: 이름  B: 값  C: 이미지  D~: 옵션들', direction);
     return;
   }
-
   const html = `<div class="list"><ul>${
     tab.rows.map((r,i) => {
       const thumb = r.image
@@ -742,7 +764,6 @@ function goRows(idx, direction = 'forward') {
         </li>`;
     }).join('')
   }</ul></div>`;
-
   const v = createView(html);
   transitionTo(v, direction);
   setTimeout(() => applyListCursor(), ANIM_DUR + 20);
@@ -750,7 +771,7 @@ function goRows(idx, direction = 'forward') {
 
 function goOptions(rowIdx) {
   const row = currentTab().rows[rowIdx];
-  if (!row.options.length) { toast('옵션이 없어요 (C열~에 추가)'); return; }
+  if (!row.options.length) { toast('옵션이 없어요 (D열~에 추가)'); return; }
   state.view = 'options';
 
   const cur = row.options.indexOf(row.value);
@@ -764,7 +785,6 @@ function goOptions(rowIdx) {
         <span class="check">${opt === row.value ? '✓' : ''}</span>
       </li>`).join('')
   }</ul></div>`;
-
   const v = createView(html);
   transitionTo(v, 'forward');
   setTimeout(() => applyOptionCursor(), ANIM_DUR + 20);
@@ -777,7 +797,6 @@ function selectOption() {
   row.value = chosen;
   markDirty();
   toast('✓ ' + chosen);
-  // 이전 화면(rows)으로 애니메이션하며 돌아감
   goRows(state.currentTabIdx, 'backward');
 }
 
@@ -790,7 +809,7 @@ function showEmptyView(msg, direction) {
 function currentTab() { return workbook?.tabs[state.currentTabIdx]; }
 function currentRow() { return currentTab()?.rows[state.rowCursor]; }
 
-// ====== 렌더 / 커서 ======
+// ====== 렌더/커서 ======
 const screenTitle = document.getElementById('screenTitle');
 const toastEl     = document.getElementById('toast');
 function setTitle(t) { screenTitle.textContent = t; }
@@ -856,7 +875,7 @@ function moveCursor(delta) {
   }
 }
 
-// ====== 휠 이벤트 ======
+// ====== 휠 ======
 let dragging = false, lastAngle = 0, accumAngle = 0;
 const DEG_PER_ITEM = 22;
 
@@ -910,20 +929,15 @@ document.getElementById('btnMenu').addEventListener('click', () => {
   else if (state.view === 'rows') goTabs();
   else if (state.view === 'tabs') showStart();
 });
-
 document.getElementById('centerBtn').addEventListener('click', () => {
   ensureAudio();
   if (state.view === 'tabs')         goRows(state.rowCursor);
   else if (state.view === 'rows')    goOptions(state.rowCursor);
   else if (state.view === 'options') selectOption();
 });
-
 document.getElementById('btnPrev').addEventListener('click', () => { moveCursor(-1); tickFeedback(); });
 document.getElementById('btnNext').addEventListener('click', () => { moveCursor(1);  tickFeedback(); });
-document.getElementById('btnPlay').addEventListener('click', () => {
-  document.getElementById('centerBtn').click();
-});
-
+document.getElementById('btnPlay').addEventListener('click', () => document.getElementById('centerBtn').click());
 document.getElementById('btnSave').addEventListener('click', () => {
   if (!workbook) return;
   saveLocal();
@@ -933,11 +947,9 @@ document.getElementById('btnSave').addEventListener('click', () => {
 });
 document.getElementById('btnExport').addEventListener('click', buildAndExport);
 
-// 파일 인풋 위임
 document.addEventListener('change', (e) => {
   if (e.target?.id === 'openFile') onFileOpen(e);
 });
-// 키보드
 document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowDown')  { moveCursor(1);  tickFeedback(); }
   else if (e.key === 'ArrowUp') { moveCursor(-1); tickFeedback(); }
