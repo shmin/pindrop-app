@@ -146,10 +146,18 @@ color: #1a1a1a;
 background: linear-gradient(180deg, #6a97e9, #3e65b8);
 color: #fff;
 }
-.sheet-view td.row-head.active-row { background: #c9c6ba; }
-.sheet-view th.active.row-head {
-background: #b8b4a6; color: #1a1a1a;
+/* sticky 라벨 열 active: outline 제거(레이아웃 틀어짐 방지), 배경색으로 표시 */
+.sheet-view td.row-head.active {
+outline: none;
+background: linear-gradient(180deg, #4a77c9, var(–bar-color));
+color: #fff;
 }
+.sheet-view th.row-head.active {
+outline: none;
+background: #8fa8d8;
+color: #fff;
+}
+.sheet-view td.row-head.active-row { background: #c9c6ba; }
 
 .sheet-view th.add-col, .sheet-view td.add-col {
 background: #f6f3eb;
@@ -1056,8 +1064,64 @@ function applyCellCursor() {
 
 function scrollActiveIntoView() {
   if (!currentView) return;
-  const cell = currentView.querySelector('.active');
-  if (cell) cell.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+  const container = currentView.querySelector('.sheet-view');
+  const cell = currentView.querySelector('td.active, th.active');
+  if (!container || !cell) return;
+
+  // sticky 열/행 크기
+  const stickyTh = container.querySelector('th.row-head');
+  const stickyLeft = stickyTh ? stickyTh.offsetWidth : 70;
+  const thead = container.querySelector('thead');
+  const stickyTop = thead ? thead.offsetHeight : 26;
+
+  // 셀의 테이블 내부 절대 위치
+  const cellLeft   = cell.offsetLeft;
+  const cellRight  = cell.offsetLeft + cell.offsetWidth;
+  const cellTop    = cell.offsetTop;
+  const cellBottom = cell.offsetTop + cell.offsetHeight;
+
+  const padding = 4;
+
+  // 목표 scrollLeft/scrollTop 계산
+  let targetLeft = container.scrollLeft;
+  let targetTop  = container.scrollTop;
+
+  // ── 수평 ──
+  if (state.colCursor === 0) {
+    targetLeft = 0;
+  } else {
+    const viewLeft  = container.scrollLeft + stickyLeft;
+    const viewRight = container.scrollLeft + container.clientWidth;
+    if (cellLeft < viewLeft) {
+      targetLeft = cellLeft - stickyLeft - padding;
+    } else if (cellRight > viewRight) {
+      targetLeft = cellRight - container.clientWidth + padding;
+    }
+  }
+
+  // ── 수직 ──
+  if (state.rowCursor === -1) {
+    targetTop = 0;
+  } else {
+    const viewTop    = container.scrollTop + stickyTop;
+    const viewBottom = container.scrollTop + container.clientHeight;
+    if (cellTop < viewTop) {
+      targetTop = cellTop - stickyTop - padding;
+    } else if (cellBottom > viewBottom) {
+      targetTop = cellBottom - container.clientHeight + padding;
+    }
+  }
+
+  targetLeft = Math.max(0, targetLeft);
+  targetTop  = Math.max(0, targetTop);
+
+  if (targetLeft !== container.scrollLeft || targetTop !== container.scrollTop) {
+    container.scrollTo({
+      left: targetLeft,
+      top: targetTop,
+      behavior: 'smooth'
+    });
+  }
 }
 
 // ====== 가운데 버튼: 크게 보기 ======
