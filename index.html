@@ -157,7 +157,17 @@ body{background:radial-gradient(1000px 700px at 50% 20%,#e7e3d8,transparent 60%)
 <div class="toast" id="toast"></div>
 
 <script>
-window.addEventListener('error',e=>{console.error(e);toast('에러: '+(e.message||'').slice(0,60))});
+window.addEventListener('error',e=>{
+  console.error(e);
+  const msg='에러: '+(e.message||String(e.error||'')).slice(0,100);
+  try{toast(msg)}catch(x){}
+  // 화면에도 표시 (toast 못 뜰 때 대비)
+  const vs=document.getElementById('viewStack');
+  if(vs&&!vs.querySelector('.view')){
+    vs.innerHTML='<div class="view show"><div class="empty"><div class="big" style="color:#c44">JS 에러</div><div style="font-size:12px;word-break:break-all;">'+msg+'</div><button onclick="localStorage.clear();location.reload()">저장 초기화 후 새로고침</button></div></div>';
+  }
+});
+window.addEventListener('unhandledrejection',e=>{console.error(e);try{toast('Promise 에러: '+String(e.reason).slice(0,60))}catch(x){}});
 
 const LS_KEY='ipod-wb-v7',LS_FN='ipod-fn-v7';
 const IMG_RE=/^(사진|image|photo|img|이미지)/i;
@@ -193,9 +203,24 @@ function setFirstView(nv){if(currentView)currentView.remove();currentView=nv;nv.
 
 // 시작
 function start(){
-  const saved=localStorage.getItem(LS_KEY);
-  if(saved){
-    try{workbook=JSON.parse(saved);dirty=false;updateDirty();goTabs(true);return}catch(e){}
+  try{
+    const saved=localStorage.getItem(LS_KEY);
+    if(saved){
+      const parsed=JSON.parse(saved);
+      // 구조 검증: tabs 배열이 있고, 각 tab에 필수 필드 있는지
+      if(parsed&&Array.isArray(parsed.tabs)&&parsed.tabs.every(t=>t.headers&&t.rows&&t.columnTypes)){
+        workbook=parsed;
+        dirty=false;updateDirty();
+        goTabs(true);
+        return;
+      }else{
+        console.warn('저장 데이터 구조 불일치, 초기화');
+        localStorage.removeItem(LS_KEY);
+      }
+    }
+  }catch(e){
+    console.error('start 에러',e);
+    try{localStorage.removeItem(LS_KEY)}catch(x){}
   }
   showStart();
 }
@@ -937,6 +962,7 @@ function esc(s){return String(s==null?’’:s).replace(/[&<>”’]/g,c=>({’&
 const toastEl=document.getElementById(‘toast’);
 let toastTimer;
 function toast(msg){
+if(!toastEl){console.log(‘toast:’,msg);return}
 toastEl.textContent=msg;toastEl.classList.add(‘show’);
 clearTimeout(toastTimer);
 toastTimer=setTimeout(()=>toastEl.classList.remove(‘show’),2000);
@@ -944,7 +970,7 @@ toastTimer=setTimeout(()=>toastEl.classList.remove(‘show’),2000);
 
 function moveRow(d){
 if(state.view===‘tabs’){
-const max=(workbook?.tabs.length||0)-1;
+const max=((workbook&&workbook.tabs)?workbook.tabs.length:0)-1;
 state.rowCursor=Math.max(0,Math.min(max,state.rowCursor+d));
 applyListCursor();
 }else if(state.view===‘sheet’){
