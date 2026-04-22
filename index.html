@@ -17,9 +17,11 @@ body{background:radial-gradient(1000px 700px at 50% 20%,#e7e3d8,transparent 60%)
 .titlebar{height:26px;background:linear-gradient(180deg,#4a77c9,var(--bar-color));color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
 .view-stack{position:absolute;top:26px;bottom:0;left:0;right:0;overflow:hidden}
 .view{position:absolute;inset:0;background:linear-gradient(180deg,var(--screen),var(--screen-2));overflow:hidden;transition:transform 280ms cubic-bezier(.22,.8,.25,1)}
-.view.slide-in-right{transform:translateX(100%)}.view.slide-in-left{transform:translateX(-100%)}
-.view.slide-out-left{transform:translateX(-100%)}.view.slide-out-right{transform:translateX(100%)}
 .view.show{transform:translateX(0)}
+.view.slide-in-right{transform:translateX(100%)}
+.view.slide-in-left{transform:translateX(-100%)}
+.view.slide-out-left{transform:translateX(-100%)}
+.view.slide-out-right{transform:translateX(100%)}
 
 .list{position:absolute;inset:0;overflow:hidden}
 .list ul{list-style:none;margin:0;padding:0;transition:transform .18s}
