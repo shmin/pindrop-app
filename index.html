@@ -220,20 +220,8 @@ function setFirstView(nv){if(currentView)currentView.remove();currentView=nv;nv.
 
 // 시작
 function start(){
-  // 이미 HTML에 깔린 초기 뷰를 currentView로 인식
   const initView=document.getElementById('initView');
-  if(initView){
-    currentView=initView;
-    // 기본 이벤트 연결
-    const inp=document.getElementById('openFile');
-    if(inp)inp.addEventListener('change',onFileOpen);
-    const nb=document.getElementById('newBtn');
-    if(nb)nb.addEventListener('click',createNew);
-    const rb=document.getElementById('resetBtn');
-    if(rb)rb.addEventListener('click',resetAll);
-    const st=document.getElementById('statusText');
-    if(st)st.textContent='JS 준비됨 ✓';
-  }
+  if(initView)currentView=initView;
   // 저장된 데이터 있으면 자동 로드
   try{
     const saved=localStorage.getItem(LS_KEY);
@@ -266,31 +254,45 @@ function showStart(){
 }
 
 async function onFileOpen(e){
-  const file=e.target.files&&e.target.files[0];
-  if(!file)return;
-  fileName=file.name;
-  localStorage.setItem(LS_FN,fileName);
   try{
-    toast('파일 읽는 중...');
+    alert('onFileOpen 호출됨');
+    const file=e.target.files&&e.target.files[0];
+    if(!file){alert('파일 없음');return}
+    alert('파일 선택됨: '+file.name);
+    fileName=file.name;
+    localStorage.setItem(LS_FN,fileName);
+    alert('파일 읽는 중...');
     const ab=await file.arrayBuffer();
+    alert('arrayBuffer 완료, '+ab.byteLength+' bytes');
     workbook=await parseWorkbook(ab);
+    alert('파싱 완료, '+workbook.tabs.length+'개 탭');
     dirty=false;saveLocal();updateDirty();
-    toast(workbook.tabs.length+'개 탭 로드됨');
     goTabs();
-  }catch(err){console.error(err);toast('파일 읽기 실패: '+err.message)}
+    alert('goTabs 호출됨');
+  }catch(err){
+    alert('onFileOpen 에러: '+err.message+'\n\n'+(err.stack||'').slice(0,400));
+  }
 }
 
 function createNew(){
-  workbook={tabs:[{
-    title:'Sheet1',
-    headers:['호수','상태','사진','메모'],
-    columnTypes:['label','text','image','text'],
-    columnOptions:{1:['청소완료','점검필요','공실']},
-    rows:[{cells:['201호','','','']},{cells:['202호','','','']},{cells:['203호','','','']}]
-  }]};
-  fileName='ipod-data.xlsx';
-  localStorage.setItem(LS_FN,fileName);
-  dirty=true;saveLocal();updateDirty();goTabs();
+  try{
+    alert('createNew 시작');
+    workbook={tabs:[{
+      title:'Sheet1',
+      headers:['호수','상태','사진','메모'],
+      columnTypes:['label','text','image','text'],
+      columnOptions:{1:['청소완료','점검필요','공실']},
+      rows:[{cells:['201호','','','']},{cells:['202호','','','']},{cells:['203호','','','']}]
+    }]};
+    fileName='ipod-data.xlsx';
+    localStorage.setItem(LS_FN,fileName);
+    dirty=true;saveLocal();updateDirty();
+    alert('createNew 데이터 세팅 완료, goTabs 호출');
+    goTabs();
+    alert('goTabs 호출 완료');
+  }catch(e){
+    alert('createNew 에러: '+e.message+'\n\n'+(e.stack||'').slice(0,300));
+  }
 }
 function resetAll(){
   if(!confirm('저장 데이터를 삭제할까요?'))return;
