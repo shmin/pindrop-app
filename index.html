@@ -1098,6 +1098,12 @@ else if(e.key===‘Escape’||e.key===‘Backspace’)handleMenu();
 });
 window.addEventListener(‘beforeunload’,e=>{if(dirty){e.preventDefault();e.returnValue=’’}});
 
+// 전역에 명시적으로 함수 노출 (onclick 속성에서 호출 가능하게)
+window.createNew=createNew;
+window.onFileOpen=onFileOpen;
+window.resetAll=resetAll;
+window.closeDownload=closeDownload;
+
 start();
 </script>
 
