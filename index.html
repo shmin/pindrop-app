@@ -5,6 +5,21 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>iPod × Excel</title>
+<script>
+// 즉시 실행 테스트 - JS 자체가 돌아가는지 확인
+try {
+  document.addEventListener('DOMContentLoaded', function() {
+    var st = document.getElementById('statusText');
+    if (st) st.textContent = 'DOM 로드됨, JS 실행 중...';
+  });
+  window.addEventListener('load', function() {
+    var st = document.getElementById('statusText');
+    if (st) st.textContent = (typeof ExcelJS === 'undefined' ? '❌ ExcelJS 로드 실패' : '✓ 모든 준비 완료');
+  });
+} catch(e) {
+  alert('초기 JS 에러: ' + e.message);
+}
+</script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <style>
 :root{--bg:#d9d5cc;--body-edge:#c9c4b8;--screen:#cfd7c7;--screen-2:#b9c3ac;--wheel-edge:#b9b4a8;--bar-color:#2e55a8}
