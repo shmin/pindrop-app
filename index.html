@@ -229,16 +229,13 @@ function start(){
 function showStart(){
   state.view='init';
   setTitle('iPod');
-  const hasBackup=!!localStorage.getItem(LS_KEY);
-  let html='<div class="empty"><div class="big">엑셀 파일로 시작</div>';
-  html+='<div>A열=라벨, B열부터=데이터<br>헤더명에 "사진/image" → 이미지 컬럼</div>';
-  html+='<label class="btn">파일 열기<input type="file" id="openFile" accept=".xlsx,.xls"/></label>';
-  html+='<button class="btn ghost" onclick="createNew()">새로 만들기</button>';
-  if(hasBackup)html+='<br><button class="btn danger" onclick="resetAll()">저장 데이터 삭제</button>';
-  html+='</div>';
-  const v=createView(html);
-  if(currentView)transitionTo(v,'backward');else setFirstView(v);
-  setTimeout(()=>{const i=v.querySelector('#openFile');if(i)i.addEventListener('change',onFileOpen)},50);
+  // 디버그: viewStack에 직접 HTML 주입 (애니메이션, transitionTo 우회)
+  viewStack.innerHTML='<div class="view show" style="padding:20px;color:#000;background:#fff;"><div style="font-size:18px;font-weight:700;margin-bottom:10px;">엑셀 파일로 시작</div><div style="font-size:12px;margin-bottom:16px;">A열=라벨, B열부터=데이터</div><label style="display:inline-block;background:#2e55a8;color:#fff;padding:10px 16px;border-radius:6px;margin:4px;cursor:pointer;">파일 열기<input type="file" id="openFile" accept=".xlsx,.xls" style="display:none;"/></label><br/><button onclick="createNew()" style="background:transparent;color:#2e55a8;border:1px solid #2e55a8;padding:8px 14px;border-radius:6px;margin:4px;font-size:13px;cursor:pointer;">새로 만들기</button>'+(localStorage.getItem(LS_KEY)?'<br/><button onclick="resetAll()" style="background:transparent;color:#c44;border:1px solid #c44;padding:6px 12px;border-radius:6px;margin:4px;font-size:12px;cursor:pointer;">저장 데이터 삭제</button>':'')+'</div>';
+  currentView=viewStack.querySelector('.view');
+  setTimeout(()=>{
+    const i=document.getElementById('openFile');
+    if(i)i.addEventListener('change',onFileOpen);
+  },50);
 }
 
 async function onFileOpen(e){
