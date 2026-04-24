@@ -130,7 +130,7 @@ body{background:radial-gradient(1000px 700px at 50% 20%,#e7e3d8,transparent 60%)
  <div class="ipod-body">
   <div class="screen">
    <div class="titlebar"><span id="screenTitle">iPod</span></div>
-   <div class="view-stack" id="viewStack"></div>
+   <div class="view-stack" id="viewStack"><div class="view show" id="initView" style="padding:20px;text-align:center;"><div style="font-size:16px;font-weight:700;margin-bottom:12px;color:#000;">엑셀로 시작</div><label style="display:inline-block;background:#2e55a8;color:#fff;padding:10px 16px;border-radius:6px;margin:4px;cursor:pointer;font-size:13px;">파일 열기<input type="file" id="openFile" accept=".xlsx,.xls" style="display:none;"/></label><br/><button id="newBtn" style="background:transparent;color:#2e55a8;border:1px solid #2e55a8;padding:8px 14px;border-radius:6px;margin:4px;font-size:13px;cursor:pointer;">새로 만들기</button><br/><button id="resetBtn" style="background:transparent;color:#c44;border:1px solid #c44;padding:6px 12px;border-radius:6px;margin:4px;font-size:11px;cursor:pointer;">저장 초기화</button><div style="font-size:10px;color:#888;margin-top:16px;" id="statusText">JS 로드 대기...</div></div></div>
    <div class="dlmodal" id="dlModal">
     <p id="dlMsg">파일이 준비됐어요.</p>
     <a class="dlbtn" id="dlLink" download>파일 다운로드</a>
@@ -205,18 +205,31 @@ function setFirstView(nv){if(currentView)currentView.remove();currentView=nv;nv.
 
 // 시작
 function start(){
+  // 이미 HTML에 깔린 초기 뷰를 currentView로 인식
+  const initView=document.getElementById('initView');
+  if(initView){
+    currentView=initView;
+    // 기본 이벤트 연결
+    const inp=document.getElementById('openFile');
+    if(inp)inp.addEventListener('change',onFileOpen);
+    const nb=document.getElementById('newBtn');
+    if(nb)nb.addEventListener('click',createNew);
+    const rb=document.getElementById('resetBtn');
+    if(rb)rb.addEventListener('click',resetAll);
+    const st=document.getElementById('statusText');
+    if(st)st.textContent='JS 준비됨 ✓';
+  }
+  // 저장된 데이터 있으면 자동 로드
   try{
     const saved=localStorage.getItem(LS_KEY);
     if(saved){
       const parsed=JSON.parse(saved);
-      // 구조 검증: tabs 배열이 있고, 각 tab에 필수 필드 있는지
       if(parsed&&Array.isArray(parsed.tabs)&&parsed.tabs.every(t=>t.headers&&t.rows&&t.columnTypes)){
         workbook=parsed;
         dirty=false;updateDirty();
         goTabs(true);
         return;
       }else{
-        console.warn('저장 데이터 구조 불일치, 초기화');
         localStorage.removeItem(LS_KEY);
       }
     }
@@ -224,7 +237,6 @@ function start(){
     console.error('start 에러',e);
     try{localStorage.removeItem(LS_KEY)}catch(x){}
   }
-  showStart();
 }
 function showStart(){
   state.view='init';
