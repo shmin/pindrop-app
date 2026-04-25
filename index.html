@@ -1,1111 +1,485 @@
 <!doctype html>
-
 <html lang="ko">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<title>iPod × Excel</title>
-<script>
-// 즉시 실행 테스트 - JS 자체가 돌아가는지 확인
-try {
-  document.addEventListener('DOMContentLoaded', function() {
-    var st = document.getElementById('statusText');
-    if (st) st.textContent = 'DOM 로드됨, JS 실행 중...';
-  });
-  window.addEventListener('load', function() {
-    var st = document.getElementById('statusText');
-    if (st) st.textContent = (typeof ExcelJS === 'undefined' ? '❌ ExcelJS 로드 실패' : '✓ 모든 준비 완료');
-  });
-} catch(e) {
-  alert('초기 JS 에러: ' + e.message);
-}
-</script>
-<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<title>pindrop</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json"/>
+<meta name="theme-color" content="#2e55a8"/>
+<link rel="apple-touch-icon" href="apple-touch-icon.png"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="pindrop"/>
+
 <style>
-:root{--bg:#d9d5cc;--body-edge:#c9c4b8;--screen:#cfd7c7;--screen-2:#b9c3ac;--wheel-edge:#b9b4a8;--bar-color:#2e55a8}
+:root{
+  --bg:#d9d5cc;
+  --body-edge:#c9c4b8;
+  --screen:#cfd7c7;
+  --screen-2:#b9c3ac;
+  --wheel-edge:#b9b4a8;
+  --bar-color:#2e55a8;
+}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;overflow:hidden}
-body{background:radial-gradient(1000px 700px at 50% 20%,#e7e3d8,transparent 60%),var(--bg);font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;user-select:none;-webkit-tap-highlight-color:transparent;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+body{
+  background:radial-gradient(1000px 700px at 50% 20%,#e7e3d8,transparent 60%),var(--bg);
+  font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;
+  user-select:none;
+  -webkit-tap-highlight-color:transparent;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
 .ipod{width:100%;height:100%;display:flex;flex-direction:column;padding:12px 10px 10px;gap:8px}
-.ipod-body{flex:1;background:linear-gradient(180deg,#fbf9f4,#eae6dc);border-radius:28px;padding:14px 14px 10px;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -2px 0 rgba(0,0,0,.06),0 12px 30px rgba(30,30,30,.2),0 0 0 1px var(--body-edge);display:flex;flex-direction:column;min-height:0}
-.screen{flex:1;min-height:0;border-radius:6px;background:linear-gradient(180deg,var(--screen),var(--screen-2));box-shadow:inset 0 2px 6px rgba(0,0,0,.25),0 0 0 4px #1a1a1a;overflow:hidden;position:relative}
-.titlebar{height:26px;background:linear-gradient(180deg,#4a77c9,var(--bar-color));color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
-.view-stack{position:absolute;top:26px;bottom:0;left:0;right:0;overflow:hidden}
-.view{position:absolute;inset:0;background:linear-gradient(180deg,var(--screen),var(--screen-2));overflow:hidden;transition:transform 280ms cubic-bezier(.22,.8,.25,1)}
+.ipod-body{
+  flex:1;
+  background:linear-gradient(180deg,#fbf9f4,#eae6dc);
+  border-radius:28px;
+  padding:14px 14px 10px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -2px 0 rgba(0,0,0,.06),0 12px 30px rgba(30,30,30,.2),0 0 0 1px var(--body-edge);
+  display:flex;flex-direction:column;min-height:0;
+}
+.screen{
+  flex:1;min-height:0;
+  border-radius:6px;
+  background:linear-gradient(180deg,var(--screen),var(--screen-2));
+  box-shadow:inset 0 2px 6px rgba(0,0,0,.25),0 0 0 4px #1a1a1a;
+  overflow:hidden;position:relative;
+}
+.titlebar{
+  height:28px;
+  background:linear-gradient(180deg,#4a77c9,var(--bar-color));
+  color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;flex-shrink:0;
+}
+.view-stack{position:absolute;top:28px;bottom:0;left:0;right:0;overflow:hidden}
+.view{
+  position:absolute;inset:0;
+  background:linear-gradient(180deg,var(--screen),var(--screen-2));
+  overflow:hidden;
+  transition:transform 280ms cubic-bezier(.22,.8,.25,1);
+}
 .view.show{transform:translateX(0)}
 .view.slide-in-right{transform:translateX(100%)}
 .view.slide-in-left{transform:translateX(-100%)}
 .view.slide-out-left{transform:translateX(-100%)}
 .view.slide-out-right{transform:translateX(100%)}
 
-.list{position:absolute;inset:0;overflow:hidden}
-.list ul{list-style:none;margin:0;padding:0;transition:transform .18s}
-.list li{padding:6px 12px;font-size:15px;border-bottom:1px solid rgba(0,0,0,.06);display:flex;align-items:center;gap:10px;min-height:44px}
-.list li .label{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.list li .meta{color:#555;font-size:12px}
-.list li.active{background:linear-gradient(180deg,#4a77c9,var(–bar-color));color:#fff}
-.list li.active .meta{color:rgba(255,255,255,.9)}
+/* 첫 화면 */
+.welcome{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:24px;text-align:center;gap:12px;
+}
+.welcome .pin-icon{
+  font-size:48px;margin-bottom:8px;
+}
+.welcome h1{
+  font-size:22px;font-weight:700;margin:0;
+}
+.welcome p{
+  font-size:13px;color:#445;margin:0;line-height:1.5;
+}
+.welcome .btn{
+  display:inline-block;
+  background:var(--bar-color);color:#fff;border:none;
+  padding:10px 18px;border-radius:8px;
+  font-size:13px;font-weight:600;cursor:pointer;
+  margin-top:8px;
+}
+.welcome .btn.ghost{
+  background:transparent;color:var(--bar-color);
+  border:1px solid var(--bar-color);
+}
+.welcome .small{
+  font-size:11px;color:#888;margin-top:16px;
+}
 
-.sheet-view{position:absolute;inset:0;overflow:auto;font-size:12px;-webkit-overflow-scrolling:touch}
-.sheet-view table{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%}
-.sheet-view th,.sheet-view td{border-right:1px solid rgba(0,0,0,.1);border-bottom:1px solid rgba(0,0,0,.08);padding:6px 8px;min-width:92px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
-.sheet-view th{background:linear-gradient(180deg,#4a77c9,var(–bar-color));color:#fff;font-weight:700;font-size:11px;text-align:left;position:sticky;top:0;z-index:3}
-.sheet-view th.row-head,.sheet-view td.row-head{background:#e4e1d7;position:sticky;left:0;z-index:2;font-weight:600;color:#333;min-width:70px;max-width:110px}
-.sheet-view th.row-head{z-index:4}
-.sheet-view td.cell-img{padding:3px}
-.sheet-view td.cell-img .thumb{width:30px;height:30px;border-radius:4px;background:rgba(0,0,0,.08) center/cover no-repeat;border:1px solid rgba(0,0,0,.15);display:inline-block}
-.sheet-view td.empty-cell{color:#bbb;font-style:italic}
-.sheet-view td.active,.sheet-view th.active{background:rgba(74,119,201,.25);outline:2px solid var(–bar-color);outline-offset:-2px;color:#1a1a1a}
-.sheet-view th.active{background:linear-gradient(180deg,#6a97e9,#3e65b8);color:#fff}
-.sheet-view td.row-head.active{outline:none;background:linear-gradient(180deg,#4a77c9,var(–bar-color));color:#fff}
-.sheet-view th.row-head.active{outline:none;background:#8fa8d8;color:#fff}
-.sheet-view td.row-head.active-row{background:#c9c6ba}
-.sheet-view th.add-col,.sheet-view td.add-col{background:#f6f3eb;color:var(–bar-color);font-weight:600;text-align:center;cursor:pointer}
-.sheet-view th.add-col{background:#d9d5c8;color:#4a77c9}
-.sheet-view tr.add-row td{background:#f6f3eb;color:var(–bar-color);font-weight:600;text-align:center;cursor:pointer}
-
-.bigview{position:absolute;inset:0;background:#000;overflow:hidden}
-.bigview .bv-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
-.bigview .bv-top{position:absolute;top:0;left:0;right:0;padding:12px 16px;background:linear-gradient(180deg,rgba(0,0,0,.7),transparent);color:#fff;font-size:13px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8);z-index:2;pointer-events:none}
-.bigview .bv-bot{position:absolute;bottom:0;left:0;right:0;padding:16px;background:linear-gradient(0deg,rgba(0,0,0,.75),transparent);color:rgba(255,255,255,.7);font-size:11px;text-shadow:0 1px 2px rgba(0,0,0,.8);z-index:2;pointer-events:none}
-.bigview .bv-text-wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:56px 20px}
-.bigview .bv-text{color:#fff;font-size:20px;line-height:1.5;max-height:100%;overflow:auto;text-align:center;white-space:pre-wrap;word-break:break-word}
-.bigview .bv-empty{color:rgba(255,255,255,.4);font-size:15px;font-style:italic;display:flex;align-items:center;justify-content:center;height:100%}
-.bigview .bv-header-info{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:56px 20px;color:#fff;text-align:center}
-.bigview .bh-title{font-size:22px;font-weight:700}
-.bigview .bh-sub{color:rgba(255,255,255,.6);font-size:13px}
-
-.editor{position:absolute;inset:0;overflow-y:auto;padding:14px;-webkit-overflow-scrolling:touch}
-.editor .ed-label{font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
-.editor .ed-rowname{font-size:18px;font-weight:700;margin-bottom:14px}
-.editor .ed-field{font-size:13px;color:#555;margin:10px 0 6px;display:flex;align-items:center;gap:6px}
-.editor .ed-field .badge{font-size:10px;padding:1px 6px;border-radius:10px;background:#e4e1d7}
-.editor .options-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
-.editor .opt{background:#fff;border:1px solid #cfcbbf;border-radius:14px;padding:5px 12px;font-size:13px;cursor:pointer}
-.editor .opt.selected{background:var(–bar-color);color:#fff;border-color:var(–bar-color)}
-.editor textarea.ed-input,.editor input.ed-input{width:100%;padding:8px 10px;border:1px solid #c9c4b8;border-radius:6px;font-family:inherit;font-size:14px;background:#fff}
-.editor textarea.ed-input{min-height:64px;resize:vertical}
-.editor .img-block{background:#fff;border:1px dashed #c9c4b8;border-radius:8px;padding:10px;text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center}
-.editor .img-block img{max-width:100%;max-height:160px;border-radius:6px}
-.editor .img-block .btns{display:flex;gap:6px}
-.editor .img-block button,.editor .img-block label{background:var(–bar-color);color:#fff;border:none;border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer}
-.editor .img-block button.del{background:#c44}
-.editor .img-block input[type=file]{display:none}
-.editor .danger-zone{margin-top:16px;padding-top:14px;border-top:1px dashed #d3cec3}
-.editor .danger-zone button{width:100%;padding:8px;background:transparent;border:1px solid #c44;color:#c44;border-radius:6px;font-size:12px;cursor:pointer;margin-bottom:6px}
-.editor-actions{position:sticky;bottom:0;display:flex;gap:8px;padding:10px 0 0;background:linear-gradient(180deg,rgba(207,215,199,0),var(–screen) 30%)}
-.editor-actions button{flex:1;padding:10px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}
-.editor-actions .cancel{background:#ddd7c8;color:#333}
-.editor-actions .save{background:var(–bar-color);color:#fff}
-
-.empty{padding:24px 18px;font-size:14px;color:#333;text-align:center;line-height:1.6}
-.empty .big{font-size:17px;font-weight:600;margin-bottom:8px}
-.empty button,.empty label.btn{display:inline-block;margin:8px 4px 0;background:var(–bar-color);color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:13px}
-.empty label.btn.ghost{background:transparent;color:var(–bar-color);border:1px solid var(–bar-color)}
-.empty label.btn.danger{background:transparent;color:#c44;border:1px solid #c44;font-size:12px}
-.empty input[type=file]{display:none}
-
-.dlmodal{position:absolute;inset:26px 0 0 0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;padding:20px;z-index:100}
-.dlmodal.show{display:flex}
-.dlmodal p{color:#fff;font-size:13px;text-align:center;margin:0;line-height:1.5}
-.dlmodal a.dlbtn{background:var(–bar-color);color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600}
-.dlmodal button{background:transparent;color:#ccc;border:1px solid #555;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer}
-
-.toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:rgba(0,0,0,.8);color:#fff;font-size:13px;padding:8px 14px;border-radius:16px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:200;max-width:80%;text-align:center}
-.toast.show{opacity:1}
-
-.controls-wrap{display:flex;flex-direction:column;align-items:center;padding-top:12px;flex-shrink:0;gap:8px}
-.top-btns{display:flex;justify-content:space-between;width:min(72%,300px);gap:12px}
-.top-btn{flex:1;padding:7px 10px;border:none;background:linear-gradient(180deg,#f0eee8,#dbd7ce);border-radius:8px;font-size:11px;font-weight:700;letter-spacing:.1em;color:#3a3a3a;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 1px 3px rgba(0,0,0,.12),0 0 0 1px var(–wheel-edge)}
+/* 컨트롤 */
+.controls-wrap{
+  display:flex;flex-direction:column;align-items:center;
+  padding-top:12px;flex-shrink:0;gap:8px;
+}
+.top-btns{
+  display:flex;justify-content:space-between;
+  width:min(72%,300px);gap:12px;
+}
+.top-btn{
+  flex:1;padding:7px 10px;border:none;
+  background:linear-gradient(180deg,#f0eee8,#dbd7ce);
+  border-radius:8px;
+  font-size:11px;font-weight:700;letter-spacing:.1em;
+  color:#3a3a3a;cursor:pointer;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 1px 3px rgba(0,0,0,.12),0 0 0 1px var(--wheel-edge);
+}
 .top-btn:active{transform:translateY(1px)}
-.top-btn.edit{background:linear-gradient(180deg,#6a97e9,#3e65b8);color:#fff}
+.top-btn.edit{
+  background:linear-gradient(180deg,#6a97e9,#3e65b8);
+  color:#fff;
+}
 
-.wheel{width:min(58%,240px);aspect-ratio:1/1;border-radius:50%;position:relative;background:radial-gradient(circle at 50% 40%,#f4f1ea,#dcd8ce 70%,#c9c4b8);box-shadow:inset 0 2px 4px rgba(255,255,255,.8),inset 0 -6px 14px rgba(0,0,0,.12),0 2px 6px rgba(0,0,0,.15),0 0 0 1px var(–wheel-edge);cursor:grab;touch-action:none;overflow:hidden}
-.wheel::before{content:””;position:absolute;inset:6%;border-radius:50%;background:repeating-conic-gradient(from 0deg,rgba(0,0,0,0) 0deg 3deg,rgba(0,0,0,.04) 3deg 3.5deg);transform:rotate(var(–rot,0deg));transition:transform .08s linear;pointer-events:none}
+.wheel{
+  width:min(58%,240px);aspect-ratio:1/1;border-radius:50%;
+  position:relative;
+  background:radial-gradient(circle at 50% 40%,#f4f1ea,#dcd8ce 70%,#c9c4b8);
+  box-shadow:inset 0 2px 4px rgba(255,255,255,.8),inset 0 -6px 14px rgba(0,0,0,.12),0 2px 6px rgba(0,0,0,.15),0 0 0 1px var(--wheel-edge);
+  cursor:grab;touch-action:none;overflow:hidden;
+}
+.wheel::before{
+  content:"";position:absolute;inset:6%;border-radius:50%;
+  background:repeating-conic-gradient(from 0deg,rgba(0,0,0,0) 0deg 3deg,rgba(0,0,0,.04) 3deg 3.5deg);
+  transform:rotate(var(--rot,0deg));
+  transition:transform .08s linear;
+  pointer-events:none;
+}
 .wheel.dragging{cursor:grabbing}
-.arrow{position:absolute;color:#4a4a4a;cursor:pointer;z-index:2;font-size:16px;padding:8px}
+.arrow{
+  position:absolute;color:#4a4a4a;cursor:pointer;z-index:2;
+  font-size:16px;padding:8px;
+}
 .arrow.up{top:3%;left:50%;transform:translateX(-50%)}
 .arrow.down{bottom:3%;left:50%;transform:translateX(-50%)}
 .arrow.left{top:50%;left:3%;transform:translateY(-50%)}
 .arrow.right{top:50%;right:3%;transform:translateY(-50%)}
-.arrow:active{color:var(–bar-color)}
-.center-btn{position:absolute;top:50%;left:50%;width:38%;height:38%;transform:translate(-50%,-50%);border:none;border-radius:50%;background:radial-gradient(circle at 50% 35%,#fff,#e8e4da 75%);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -4px 10px rgba(0,0,0,.08),0 1px 3px rgba(0,0,0,.15),0 0 0 1px var(–wheel-edge);cursor:pointer;z-index:3}
+.arrow:active{color:var(--bar-color)}
 
-.btn-panel{display:flex;gap:10px;padding:12px 14px 14px;background:linear-gradient(180deg,#eae6dc,#ddd9d0);border-radius:18px;box-shadow:0 10px 24px rgba(30,30,30,.18),0 0 0 1px var(–body-edge);flex-shrink:0}
-.btn-panel button{flex:1;padding:12px 0;border:none;border-radius:12px;font-size:13px;font-weight:700;letter-spacing:.08em;cursor:pointer;position:relative;box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 2px 4px rgba(0,0,0,.15)}
-.btn-save{background:linear-gradient(180deg,#f0eee8,#dbd7ce);color:#3a3a3a}
-.btn-export{background:linear-gradient(180deg,#4a77c9,var(–bar-color));color:#fff}
-.btn-panel .dot{position:absolute;top:7px;right:8px;width:7px;height:7px;border-radius:50%;background:#ff9d5a}
-.btn-panel .dot.clean{background:#a0e878}
+.center-btn{
+  position:absolute;top:50%;left:50%;
+  width:38%;height:38%;
+  transform:translate(-50%,-50%);
+  border:none;border-radius:50%;
+  background:radial-gradient(circle at 50% 35%,#fff,#e8e4da 75%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -4px 10px rgba(0,0,0,.08),0 1px 3px rgba(0,0,0,.15),0 0 0 1px var(--wheel-edge);
+  cursor:pointer;z-index:3;
+}
+
+.btn-panel{
+  display:flex;gap:10px;
+  padding:12px 14px 14px;
+  background:linear-gradient(180deg,#eae6dc,#ddd9d0);
+  border-radius:18px;
+  box-shadow:0 10px 24px rgba(30,30,30,.18),0 0 0 1px var(--body-edge);
+  flex-shrink:0;
+}
+.btn-panel button{
+  flex:1;padding:12px 0;border:none;border-radius:12px;
+  font-size:13px;font-weight:700;letter-spacing:.08em;
+  cursor:pointer;position:relative;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 2px 4px rgba(0,0,0,.15);
+}
+.btn-sync{background:linear-gradient(180deg,#f0eee8,#dbd7ce);color:#3a3a3a}
+.btn-add{background:linear-gradient(180deg,#4a77c9,var(--bar-color));color:#fff}
+
+.toast{
+  position:fixed;left:50%;bottom:80px;transform:translateX(-50%);
+  background:rgba(0,0,0,.8);color:#fff;font-size:13px;
+  padding:8px 14px;border-radius:16px;opacity:0;transition:opacity .2s;
+  pointer-events:none;z-index:200;max-width:80%;text-align:center;
+}
+.toast.show{opacity:1}
 </style>
-
 </head>
 <body>
+
 <div class="ipod">
- <div class="ipod-body">
-  <div class="screen">
-   <div class="titlebar"><span id="screenTitle">iPod</span></div>
-   <div class="view-stack" id="viewStack"><div class="view show" id="initView" style="padding:20px;text-align:center;"><div style="font-size:16px;font-weight:700;margin-bottom:12px;color:#000;">엑셀로 시작</div><label style="display:inline-block;background:#2e55a8;color:#fff;padding:10px 16px;border-radius:6px;margin:4px;cursor:pointer;font-size:13px;">파일 열기<input type="file" id="openFile" accept=".xlsx,.xls" style="display:none;" onchange="onFileOpen(event)"/></label><br/><button onclick="createNew()" style="background:transparent;color:#2e55a8;border:1px solid #2e55a8;padding:8px 14px;border-radius:6px;margin:4px;font-size:13px;cursor:pointer;">새로 만들기</button><br/><button onclick="resetAll()" style="background:transparent;color:#c44;border:1px solid #c44;padding:6px 12px;border-radius:6px;margin:4px;font-size:11px;cursor:pointer;">저장 초기화</button><div style="font-size:10px;color:#888;margin-top:16px;" id="statusText">JS 로드 대기...</div></div></div>
-   <div class="dlmodal" id="dlModal">
-    <p id="dlMsg">파일이 준비됐어요.</p>
-    <a class="dlbtn" id="dlLink" download>파일 다운로드</a>
-    <button onclick="closeDownload()">닫기</button>
-   </div>
+  <div class="ipod-body">
+    <div class="screen">
+      <div class="titlebar"><span id="screenTitle">pindrop</span></div>
+      <div class="view-stack" id="viewStack">
+        <!-- 초기 화면: HTML에 직접 박아둠 (JS 없어도 보임) -->
+        <div class="view show" id="welcomeView">
+          <div class="welcome">
+            <div class="pin-icon">📍</div>
+            <h1>pindrop</h1>
+            <p>장소별 정보를<br/>iPod처럼 기록하기</p>
+            <button class="btn" onclick="openSetup()">시작하기</button>
+            <div class="small" id="appStatus">Google 시트 연결이 필요해요</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls-wrap">
+      <div class="top-btns">
+        <button class="top-btn" id="btnMenu">MENU</button>
+        <button class="top-btn edit" id="btnEdit">EDIT</button>
+      </div>
+      <div class="wheel" id="wheel">
+        <span class="arrow up" id="btnUp">▲</span>
+        <span class="arrow down" id="btnDown">▼</span>
+        <span class="arrow left" id="btnLeft">◀</span>
+        <span class="arrow right" id="btnRight">▶</span>
+        <button class="center-btn" id="centerBtn" aria-label="View"></button>
+      </div>
+    </div>
   </div>
-  <div class="controls-wrap">
-   <div class="top-btns">
-    <button class="top-btn" id="btnMenu">MENU</button>
-    <button class="top-btn edit" id="btnEdit">EDIT</button>
-   </div>
-   <div class="wheel" id="wheel">
-    <span class="arrow up" id="btnUp">▲</span>
-    <span class="arrow down" id="btnDown">▼</span>
-    <span class="arrow left" id="btnLeft">◀</span>
-    <span class="arrow right" id="btnRight">▶</span>
-    <button class="center-btn" id="centerBtn"></button>
-   </div>
+
+  <div class="btn-panel">
+    <button class="btn-sync" id="btnSync">SYNC</button>
+    <button class="btn-add" id="btnAdd">＋</button>
   </div>
- </div>
- <div class="btn-panel">
-  <button class="btn-save" id="btnSave"><span class="dot" id="dirtyDot"></span>SAVE</button>
-  <button class="btn-export" id="btnExport">EXPORT</button>
- </div>
 </div>
+
 <div class="toast" id="toast"></div>
 
 <script>
-window.addEventListener('error',e=>{
-  console.error(e);
-  const msg='에러: '+(e.message||String(e.error||'')).slice(0,100);
-  try{toast(msg)}catch(x){}
-  // 화면에도 표시 (toast 못 뜰 때 대비)
-  const vs=document.getElementById('viewStack');
-  if(vs&&!vs.querySelector('.view')){
-    vs.innerHTML='<div class="view show"><div class="empty"><div class="big" style="color:#c44">JS 에러</div><div style="font-size:12px;word-break:break-all;">'+msg+'</div><button onclick="localStorage.clear();location.reload()">저장 초기화 후 새로고침</button></div></div>';
-  }
-});
-window.addEventListener('unhandledrejection',e=>{console.error(e);try{toast('Promise 에러: '+String(e.reason).slice(0,60))}catch(x){}});
+'use strict';
 
-const LS_KEY='ipod-wb-v7',LS_FN='ipod-fn-v7';
-const IMG_RE=/^(사진|image|photo|img|이미지)/i;
-let workbook=null,fileName=localStorage.getItem(LS_FN)||'ipod-data.xlsx',dirty=false;
-const state={view:'init',currentTabIdx:-1,rowCursor:0,colCursor:0,editor:null};
-const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+// ────────────────────────────────────────
+// 전역 상태
+// ────────────────────────────────────────
+const LS_URL = 'pindrop:scriptUrl';
+let scriptUrl = localStorage.getItem(LS_URL) || '';
 
-// 휠
-const wheel=document.getElementById('wheel');
-let diskRot=0;
-function rotateDisk(d){diskRot+=d;wheel.style.setProperty('--rot',diskRot+'deg')}
+const state = {
+  view: 'welcome', // welcome | setup | list | detail | editor
+};
 
-// 뷰 스택
-const viewStack=document.getElementById('viewStack');
-let currentView=null,animating=false;
-const ANIM=280;
-function createView(html){const v=document.createElement('div');v.className='view';v.innerHTML=html;return v}
-function transitionTo(nv,dir){
-  dir=dir||'forward';
-  if(animating&&currentView)currentView.remove();
-  animating=true;
-  const old=currentView;
-  currentView=nv;
-  nv.classList.add(dir==='forward'?'slide-in-right':'slide-in-left');
-  viewStack.appendChild(nv);
-  void nv.offsetWidth;
-  nv.classList.remove('slide-in-right','slide-in-left');
-  nv.classList.add('show');
-  if(old){old.classList.remove('show');old.classList.add(dir==='forward'?'slide-out-left':'slide-out-right')}
-  setTimeout(()=>{if(old)old.remove();animating=false},ANIM);
-}
-function setFirstView(nv){if(currentView)currentView.remove();currentView=nv;nv.classList.add('show');viewStack.appendChild(nv)}
+// ────────────────────────────────────────
+// 유틸
+// ────────────────────────────────────────
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+  '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+}[c]));
 
-// 시작
-function start(){
-  const initView=document.getElementById('initView');
-  if(initView)currentView=initView;
-  // 저장된 데이터 있으면 자동 로드
-  try{
-    const saved=localStorage.getItem(LS_KEY);
-    if(saved){
-      const parsed=JSON.parse(saved);
-      if(parsed&&Array.isArray(parsed.tabs)&&parsed.tabs.every(t=>t.headers&&t.rows&&t.columnTypes)){
-        workbook=parsed;
-        dirty=false;updateDirty();
-        goTabs(true);
-        return;
-      }else{
-        localStorage.removeItem(LS_KEY);
-      }
-    }
-  }catch(e){
-    console.error('start 에러',e);
-    try{localStorage.removeItem(LS_KEY)}catch(x){}
-  }
-}
-function showStart(){
-  state.view='init';
-  setTitle('iPod');
-  // 디버그: viewStack에 직접 HTML 주입 (애니메이션, transitionTo 우회)
-  viewStack.innerHTML='<div class="view show" style="padding:20px;color:#000;background:#fff;"><div style="font-size:18px;font-weight:700;margin-bottom:10px;">엑셀 파일로 시작</div><div style="font-size:12px;margin-bottom:16px;">A열=라벨, B열부터=데이터</div><label style="display:inline-block;background:#2e55a8;color:#fff;padding:10px 16px;border-radius:6px;margin:4px;cursor:pointer;">파일 열기<input type="file" id="openFile" accept=".xlsx,.xls" style="display:none;"/></label><br/><button onclick="createNew()" style="background:transparent;color:#2e55a8;border:1px solid #2e55a8;padding:8px 14px;border-radius:6px;margin:4px;font-size:13px;cursor:pointer;">새로 만들기</button>'+(localStorage.getItem(LS_KEY)?'<br/><button onclick="resetAll()" style="background:transparent;color:#c44;border:1px solid #c44;padding:6px 12px;border-radius:6px;margin:4px;font-size:12px;cursor:pointer;">저장 데이터 삭제</button>':'')+'</div>';
-  currentView=viewStack.querySelector('.view');
-  setTimeout(()=>{
-    const i=document.getElementById('openFile');
-    if(i)i.addEventListener('change',onFileOpen);
-  },50);
-}
-
-async function onFileOpen(e){
-  try{
-    alert('onFileOpen 호출됨');
-    const file=e.target.files&&e.target.files[0];
-    if(!file){alert('파일 없음');return}
-    alert('파일 선택됨: '+file.name);
-    fileName=file.name;
-    localStorage.setItem(LS_FN,fileName);
-    alert('파일 읽는 중...');
-    const ab=await file.arrayBuffer();
-    alert('arrayBuffer 완료, '+ab.byteLength+' bytes');
-    workbook=await parseWorkbook(ab);
-    alert('파싱 완료, '+workbook.tabs.length+'개 탭');
-    dirty=false;saveLocal();updateDirty();
-    goTabs();
-    alert('goTabs 호출됨');
-  }catch(err){
-    alert('onFileOpen 에러: '+err.message+'\n\n'+(err.stack||'').slice(0,400));
-  }
-}
-
-function createNew(){
-  try{
-    alert('createNew 시작');
-    workbook={tabs:[{
-      title:'Sheet1',
-      headers:['호수','상태','사진','메모'],
-      columnTypes:['label','text','image','text'],
-      columnOptions:{1:['청소완료','점검필요','공실']},
-      rows:[{cells:['201호','','','']},{cells:['202호','','','']},{cells:['203호','','','']}]
-    }]};
-    fileName='ipod-data.xlsx';
-    localStorage.setItem(LS_FN,fileName);
-    dirty=true;saveLocal();updateDirty();
-    alert('createNew 데이터 세팅 완료, goTabs 호출');
-    goTabs();
-    alert('goTabs 호출 완료');
-  }catch(e){
-    alert('createNew 에러: '+e.message+'\n\n'+(e.stack||'').slice(0,300));
-  }
-}
-function resetAll(){
-  if(!confirm('저장 데이터를 삭제할까요?'))return;
-  localStorage.removeItem(LS_KEY);localStorage.removeItem(LS_FN);
-  workbook=null;fileName='ipod-data.xlsx';dirty=false;updateDirty();showStart();
-}
-
-async function parseWorkbook(ab){
-  const wb=new ExcelJS.Workbook();
-  await wb.xlsx.load(ab);
-  const optsMap={};
-  const optSheet=wb.getWorksheet('_options');
-  if(optSheet){
-    for(let r=2;r<=optSheet.rowCount;r++){
-      const row=optSheet.getRow(r);
-      const sn=cellText(row.getCell(1)),h=cellText(row.getCell(2)),os=cellText(row.getCell(3));
-      if(!sn||!h||!os)continue;
-      optsMap[sn+'::'+h]=os.split(',').map(s=>s.trim()).filter(s=>s);
-    }
-  }
-  const tabs=[];
-  wb.eachSheet(sheet=>{
-    if(sheet.name==='_options')return;
-    const imgPos={};
-    try{
-      (sheet.getImages()||[]).forEach(img=>{
-        const rN=((img.range&&img.range.tl&&img.range.tl.nativeRow)||0)+1;
-        const cN=((img.range&&img.range.tl&&img.range.tl.nativeCol)||0)+1;
-        const media=wb.model.media.find(m=>m.index===img.imageId);
-        if(!media)return;
-        const url=mediaToDataUrl(media);
-        if(url)imgPos[rN+':'+cN]=url;
-      });
-    }catch(e){}
-    const hr=sheet.getRow(1);
-    const headers=[];
-    const lastCol=sheet.columnCount||1;
-    for(let c=1;c<=lastCol;c++)headers.push(cellText(hr.getCell(c)));
-    while(headers.length&&!headers[headers.length-1])headers.pop();
-    if(!headers.length)headers.push('A');
-    const columnTypes=headers.map((h,i)=>i===0?'label':(IMG_RE.test(h)?'image':'text'));
-    const columnOptions={};
-    headers.forEach((h,i)=>{
-      const key=sheet.name+'::'+h;
-      if(optsMap[key])columnOptions[i]=optsMap[key];
-    });
-    const rows=[];
-    for(let r=2;r<=sheet.rowCount;r++){
-      const row=sheet.getRow(r);
-      const cells=[];let has=false;
-      for(let c=1;c<=headers.length;c++){
-        if(columnTypes[c-1]==='image'){
-          const img=imgPos[r+':'+c]||'';
-          cells.push(img);if(img)has=true;
-        }else{
-          const t=cellText(row.getCell(c));
-          cells.push(t);if(t)has=true;
-        }
-      }
-      if(!has&&!cells[0])continue;
-      rows.push({cells});
-    }
-    tabs.push({title:sheet.name,headers,columnTypes,columnOptions,rows});
-  });
-  if(!tabs.length)tabs.push({title:'Sheet1',headers:['라벨'],columnTypes:['label'],columnOptions:{},rows:[]});
-  return {tabs};
-}
-
-function cellText(cell){
-  const v=cell&&cell.value;
-  if(v==null)return '';
-  if(typeof v==='object'){
-    if(v.richText)return v.richText.map(t=>t.text).join('').trim();
-    if(v.result!=null)return String(v.result).trim();
-    if(v.text!=null)return String(v.text).trim();
-    return '';
-  }
-  return String(v).trim();
-}
-function mediaToDataUrl(m){
-  try{
-    const ext=(m.extension||'png').toLowerCase();
-    const mime=ext==='jpg'||ext==='jpeg'?'image/jpeg':ext==='png'?'image/png':ext==='gif'?'image/gif':'image/png';
-    let b64='';
-    if(m.buffer){
-      const b=new Uint8Array(m.buffer);
-      let bin='';for(let i=0;i<b.length;i++)bin+=String.fromCharCode(b[i]);
-      b64=btoa(bin);
-    }else if(m.base64)b64=m.base64;
-    else return '';
-    return 'data:'+mime+';base64,'+b64;
-  }catch(e){return ''}
-}
-
-async function buildAndExport(){
-  if(!workbook)return;
-  try{
-    toast('Export 중...');
-    const wb=new ExcelJS.Workbook();
-    const optsAoa=[['sheet','header','options']];
-    workbook.tabs.forEach(tab=>{
-      Object.keys(tab.columnOptions||{}).forEach(k=>{
-        const h=tab.headers[Number(k)],opts=tab.columnOptions[k];
-        if(h&&opts&&opts.length)optsAoa.push([tab.title,h,opts.join(', ')]);
-      });
-    });
-    for(const tab of workbook.tabs){
-      const ws=wb.addWorksheet(tab.title);
-      ws.addRow(tab.headers);
-      const hasImg=tab.columnTypes.some(t=>t==='image');
-      tab.headers.forEach((h,i)=>{
-        ws.getColumn(i+1).width=tab.columnTypes[i]==='image'?12:Math.max(10,(h||'').length+4);
-      });
-      tab.rows.forEach((r,i)=>{
-        const rd=r.cells.map((v,c)=>tab.columnTypes[c]==='image'?'':v);
-        const row=ws.addRow(rd);
-        if(hasImg)row.height=60;
-        r.cells.forEach((v,c)=>{
-          if(tab.columnTypes[c]!=='image'||!v)return;
-          const info=dataUrlToBuffer(v);
-          if(!info)return;
-          const id=wb.addImage({buffer:info.buffer,extension:info.ext});
-          ws.addImage(id,{tl:{col:c,row:i+1},ext:{width:75,height:75}});
-        });
-      });
-      const h1=ws.getRow(1);
-      h1.font={bold:true};
-      h1.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE8E8E8'}};
-    }
-    if(optsAoa.length>1){
-      const ows=wb.addWorksheet('_options',{state:'hidden'});
-      optsAoa.forEach(r=>ows.addRow(r));
-      ows.getRow(1).font={bold:true};
-    }
-    const buf=await wb.xlsx.writeBuffer();
-    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-    const fname=fileName||'ipod-data.xlsx';
-    if(navigator.share&&navigator.canShare){
-      const sf=new File([blob],fname,{type:blob.type});
-      if(navigator.canShare({files:[sf]})){
-        navigator.share({files:[sf],title:fname})
-          .then(()=>toast('공유됨'))
-          .catch(err=>{if(err.name!=='AbortError')fallbackDL(blob,fname)});
-        return;
-      }
-    }
-    fallbackDL(blob,fname);
-  }catch(err){console.error(err);toast('Export 실패: '+String(err.message).slice(0,50))}
-}
-function dataUrlToBuffer(u){
-  try{
-    const m=u.match(/^data:image\/(\w+);base64,(.+)$/);
-    if(!m)return null;
-    const ext=m[1]==='jpg'?'jpeg':m[1];
-    const bin=atob(m[2]);
-    const buf=new Uint8Array(bin.length);
-    for(let i=0;i<bin.length;i++)buf[i]=bin.charCodeAt(i);
-    return {buffer:buf,ext};
-  }catch(e){return null}
-}
-function fallbackDL(blob,fname){
-  const url=URL.createObjectURL(blob);
-  if(isIOS){
-    const link=document.getElementById('dlLink');
-    link.href=url;link.download=fname;
-    document.getElementById('dlMsg').innerHTML='<b>'+esc(fname)+'</b><br>버튼을 <b>길게 눌러</b> 다운로드';
-    document.getElementById('dlModal').classList.add('show');
-  }else{
-    const a=document.createElement('a');
-    a.href=url;a.download=fname;
-    document.body.appendChild(a);a.click();a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),5000);
-    toast('Export 완료');
-  }
-}
-function closeDownload(){document.getElementById('dlModal').classList.remove('show')}
-
-function saveLocal(){try{localStorage.setItem(LS_KEY,JSON.stringify(workbook))}catch(e){toast('용량 초과')}}
-function markDirty(){dirty=true;updateDirty()}
-function updateDirty(){document.getElementById('dirtyDot').classList.toggle('clean',!dirty)}
-
-async function resizeImage(file,maxDim,quality){
-  maxDim=maxDim||800;quality=quality||0.8;
-  const dataUrl=await new Promise((res,rej)=>{
-    const fr=new FileReader();
-    fr.onload=()=>res(fr.result);fr.onerror=()=>rej(new Error('read fail'));
-    fr.readAsDataURL(file);
-  });
-  const img=await new Promise((res,rej)=>{
-    const im=new Image();
-    im.onload=()=>res(im);im.onerror=()=>rej(new Error('img fail'));
-    im.src=dataUrl;
-  });
-  let w=img.width,h=img.height;
-  const s=Math.min(1,maxDim/Math.max(w,h));
-  w=Math.round(w*s);h=Math.round(h*s);
-  const c=document.createElement('canvas');
-  c.width=w;c.height=h;
-  c.getContext('2d').drawImage(img,0,0,w,h);
-  return c.toDataURL('image/jpeg',quality);
-}
-
-function goTabs(initial){
-  const wasDeeper=state.view!=='init'&&state.view!=='tabs';
-  state.view='tabs';state.rowCursor=0;
-  setTitle(fileName.replace(/\.xlsx?$/,'').slice(0,24)||'iPod');
-  if(!workbook||!workbook.tabs.length){showEmptyView('탭이 없어요',wasDeeper?'backward':'forward');return}
-  let html='<div class="list"><ul>';
-  workbook.tabs.forEach((t,i)=>{
-    html+='<li class="'+(i===state.rowCursor?'active':'')+'">';
-    html+='<span class="label">'+esc(t.title)+'</span>';
-    html+='<span class="meta">'+t.rows.length+'행 × '+t.headers.length+'열</span>';
-    html+='</li>';
-  });
-  html+='</ul></div>';
-  const v=createView(html);
-  if(initial)setFirstView(v);else transitionTo(v,wasDeeper?'backward':'forward');
-  setTimeout(applyListCursor,ANIM+20);
-}
-
-function goSheet(idx,dir){
-  dir=dir||'forward';
-  state.view='sheet';state.currentTabIdx=idx;
-  const tab=workbook.tabs[idx];
-  if(state.rowCursor<-1)state.rowCursor=-1;
-  if(state.rowCursor>tab.rows.length)state.rowCursor=tab.rows.length;
-  if(state.colCursor<0)state.colCursor=0;
-  if(state.colCursor>tab.headers.length)state.colCursor=tab.headers.length;
-  setTitle(tab.title.slice(0,24));
-  const v=createView(renderSheetHtml(tab));
-  transitionTo(v,dir);
-  setTimeout(()=>{applyCellCursor();scrollActiveIntoView()},ANIM+20);
-}
-
-function renderSheetHtml(tab){
-  const rN=tab.rows.length,cN=tab.headers.length;
-  let h='<div class="sheet-view"><table><thead><tr>';
-  tab.headers.forEach((hdr,i)=>{
-    const cls=i===0?'row-head':'';
-    h+='<th class="'+cls+'" data-row="-1" data-col="'+i+'">'+esc(hdr||('col'+(i+1)))+'</th>';
-  });
-  h+='<th class="add-col" data-row="-1" data-col="'+cN+'">＋ 열</th></tr></thead><tbody>';
-  tab.rows.forEach((r,rIdx)=>{
-    h+='<tr>';
-    r.cells.forEach((v,cIdx)=>{
-      const t=tab.columnTypes[cIdx];
-      if(t==='label'){
-        h+='<td class="row-head" data-row="'+rIdx+'" data-col="'+cIdx+'">'+esc(v||'')+'</td>';
-      }else if(t==='image'){
-        h+='<td class="cell-img" data-row="'+rIdx+'" data-col="'+cIdx+'">';
-        if(v)h+='<span class="thumb" style="background-image:url(&quot;'+v+'&quot;)"></span>';
-        h+='</td>';
-      }else{
-        const s=v||'';
-        h+='<td data-row="'+rIdx+'" data-col="'+cIdx+'" class="'+(s?'':'empty-cell')+'">'+esc(s||'—')+'</td>';
-      }
-    });
-    h+='<td class="add-col" data-row="'+rIdx+'" data-col="'+cN+'">＋</td></tr>';
-  });
-  h+='<tr class="add-row">';
-  for(let c=0;c<cN;c++){
-    const cls=c===0?'row-head':'';
-    h+='<td class="'+cls+'" data-row="'+rN+'" data-col="'+c+'">'+(c===0?'＋ 행':'')+'</td>';
-  }
-  h+='<td class="add-col" data-row="'+rN+'" data-col="'+cN+'">＋</td></tr>';
-  h+='</tbody></table></div>';
-  return h;
-}
-
-function applyCellCursor(){
-  if(!currentView)return;
-  const t=currentView.querySelector('.sheet-view table');
-  if(!t)return;
-  t.querySelectorAll('.active').forEach(el=>el.classList.remove('active'));
-  t.querySelectorAll('.active-row').forEach(el=>el.classList.remove('active-row'));
-  if(state.rowCursor===-1){
-    const th=t.querySelector('th[data-col="'+state.colCursor+'"]');
-    if(th)th.classList.add('active');
-  }else{
-    const cell=t.querySelector('td[data-row="'+state.rowCursor+'"][data-col="'+state.colCursor+'"]');
-    if(cell)cell.classList.add('active');
-    const rh=t.querySelector('td.row-head[data-row="'+state.rowCursor+'"]');
-    if(rh&&state.colCursor!==0)rh.classList.add('active-row');
-  }
-}
-
-function scrollActiveIntoView(){
-  if(!currentView)return;
-  const container=currentView.querySelector('.sheet-view');
-  const cell=currentView.querySelector('td.active, th.active');
-  if(!container||!cell)return;
-  if(container.clientHeight===0){
-    requestAnimationFrame(scrollActiveIntoView);
-    return;
-  }
-  const stickyTh=container.querySelector('th.row-head');
-  const stickyLeft=stickyTh?stickyTh.offsetWidth:70;
-  const thead=container.querySelector('thead');
-  const stickyTop=thead?thead.offsetHeight:26;
-  const cL=cell.offsetLeft,cR=cL+cell.offsetWidth;
-  const cT=cell.offsetTop,cB=cT+cell.offsetHeight;
-  let tL=container.scrollLeft,tT=container.scrollTop;
-  const pad=4;
-  if(state.colCursor===0){
-    tL=0;
-  }else{
-    const vL=container.scrollLeft+stickyLeft,vR=container.scrollLeft+container.clientWidth;
-    if(cL<vL)tL=cL-stickyLeft-pad;
-    else if(cR>vR)tL=cR-container.clientWidth+pad;
-  }
-  if(state.rowCursor===-1){
-    tT=0;
-  }else{
-    const vT=container.scrollTop+stickyTop,vB=container.scrollTop+container.clientHeight;
-    if(cT<vT)tT=cT-stickyTop-pad;
-    else if(cB>vB)tT=cB-container.clientHeight+pad;
-  }
-  container.scrollLeft=Math.max(0,Math.round(tL));
-  container.scrollTop=Math.max(0,Math.round(tT));
-}
-
-function onCenterPress(){
-  const tab=currentTab();
-  if(!tab)return;
-  if(state.rowCursor===tab.rows.length){openNewRowEditor();return}
-  if(state.colCursor===tab.headers.length){openNewColEditor();return}
-  if(state.rowCursor===-1){showBigViewForHeader();return}
-  showBigViewForCell();
-}
-
-function showBigViewForCell(){
-  const tab=currentTab();
-  const row=tab.rows[state.rowCursor];
-  if(!row)return;
-  const c=state.colCursor,t=tab.columnTypes[c],h=tab.headers[c]||'',v=row.cells[c],l=row.cells[0]||'—';
-  const wasBig=state.view==='bigview';
-  state.view='bigview';
-  setTitle('보기');
-  let html='<div class="bigview">';
-  if(t==='image'){
-    if(v)html+='<img class="bv-img" src="'+v+'"/>';
-    else html+='<div class="bv-empty">사진 없음</div>';
-  }else{
-    html+='<div class="bv-text-wrap">';
-    if(v)html+='<div class="bv-text">'+esc(v)+'</div>';
-    else html+='<div class="bv-empty">(빈 값)</div>';
-    html+='</div>';
-  }
-  html+='<div class="bv-top">'+esc(l)+' · '+esc(h)+'</div>';
-  html+='<div class="bv-bot">휠/화살표: 이동 · EDIT: 편집 · MENU: 닫기</div></div>';
-  if(wasBig&&currentView)currentView.innerHTML=html;
-  else{const nv=createView(html);transitionTo(nv,'forward')}
-}
-
-function showBigViewForHeader(){
-  const tab=currentTab();
-  const c=state.colCursor,h=tab.headers[c]||'',t=tab.columnTypes[c];
-  const opts=(tab.columnOptions&&tab.columnOptions[c])||[];
-  const wasBig=state.view==='bigview';
-  state.view='bigview';
-  setTitle('열 정보');
-  let html='<div class="bigview"><div class="bv-header-info">';
-  html+='<div class="bh-sub">헤더 · '+(c+1)+'열</div>';
-  html+='<div class="bh-title">'+esc(h)+'</div>';
-  html+='<div class="bh-sub">타입: '+(t==='image'?'이미지':(t==='label'?'라벨':'텍스트'))+'</div>';
-  if(opts.length)html+='<div class="bh-sub">옵션: '+opts.map(esc).join(', ')+'</div>';
-  html+='</div><div class="bv-bot">휠/화살표: 이동 · EDIT: 편집 · MENU: 닫기</div></div>';
-  if(wasBig&&currentView)currentView.innerHTML=html;
-  else{const nv=createView(html);transitionTo(nv,'forward')}
-}
-
-function onEditPress(){
-  if(state.view==='bigview'){
-    if(state.rowCursor===-1)openHeaderEditor();
-    else openCellEditor();
-    return;
-  }
-  if(state.view==='sheet'){
-    const tab=currentTab();
-    if(!tab)return;
-    if(state.rowCursor===tab.rows.length){openNewRowEditor();return}
-    if(state.colCursor===tab.headers.length){openNewColEditor();return}
-    if(state.rowCursor===-1)openHeaderEditor();
-    else if(state.colCursor===0)openLabelEditor();
-    else openCellEditor();
-  }
-}
-
-function openCellEditor(){
-  const tab=currentTab(),row=tab.rows[state.rowCursor];
-  if(!row)return;
-  const c=state.colCursor,t=tab.columnTypes[c];
-  state.view='editor';
-  state.editor={kind:'cell',colIdx:c,type:t,value:t==='image'?'':(row.cells[c]||''),image:t==='image'?(row.cells[c]||''):''};
-  setTitle('셀 편집');
-  renderEditor();
-}
-function openLabelEditor(){
-  const tab=currentTab(),row=tab.rows[state.rowCursor];
-  if(!row)return;
-  state.view='editor';
-  state.editor={kind:'label',value:row.cells[0]||''};
-  setTitle('행 편집');
-  renderEditor();
-}
-function openHeaderEditor(){
-  const tab=currentTab(),c=state.colCursor;
-  if(c===0){toast('라벨 열은 고정');return}
-  const opts=(tab.columnOptions&&tab.columnOptions[c])||[];
-  state.view='editor';
-  state.editor={kind:'header',colIdx:c,header:tab.headers[c],type:tab.columnTypes[c],optionsStr:opts.join(', ')};
-  setTitle('열 편집');
-  renderEditor();
-}
-function openNewRowEditor(){state.view='editor';state.editor={kind:'newRow',label:''};setTitle('새 행');renderEditor()}
-function openNewColEditor(){state.view='editor';state.editor={kind:'newCol',header:'',type:'text',optionsStr:''};setTitle('새 열');renderEditor()}
-
-function renderEditor(){
-  const ed=state.editor;if(!ed)return;
-  if(ed.kind==='cell')return renderCellEditor();
-  if(ed.kind==='label')return renderLabelEditor();
-  if(ed.kind==='header')return renderHeaderEditor();
-  if(ed.kind==='newRow')return renderNewRowEditor();
-  if(ed.kind==='newCol')return renderNewColEditor();
-}
-
-function renderCellEditor(){
-  const tab=currentTab(),row=tab.rows[state.rowCursor],ed=state.editor;
-  const c=ed.colIdx,h=tab.headers[c]||'',t=ed.type;
-  const opts=(tab.columnOptions&&tab.columnOptions[c])||[];
-  let html='<div class="editor"><div class="ed-label">행</div>';
-  html+='<div class="ed-rowname">'+esc(row.cells[0]||'—')+'</div>';
-  html+='<div class="ed-field"><span>'+esc(h)+'</span><span class="badge">'+(t==='image'?'이미지':(opts.length?'옵션+텍스트':'텍스트'))+'</span></div>';
-  if(t==='image'){
-    html+='<div class="img-block">';
-    if(ed.image)html+='<img src="'+ed.image+'"/>';
-    else html+='<div style="color:#999;padding:20px 0;">사진 없음</div>';
-    html+='<div class="btns"><label>'+(ed.image?'교체':'사진 추가')+'<input type="file" id="edImgPicker" accept="image/*"/></label>';
-    if(ed.image)html+='<button class="del" id="edImgDel">삭제</button>';
-    html+='</div></div>';
-  }else{
-    if(opts.length){
-      html+='<div class="options-row" id="edOptions">';
-      opts.forEach(o=>{
-        const sel=o===ed.value?'selected':'';
-        html+='<button class="opt '+sel+'" data-opt="'+esc(o)+'">'+esc(o)+'</button>';
-      });
-      html+='</div>';
-    }
-    html+='<textarea class="ed-input" id="edText" rows="3" placeholder="직접 입력">'+esc(ed.value)+'</textarea>';
-
-}
-html+=’<div class="editor-actions"><button class="cancel" id="edCancel">취소</button><button class="save" id="edSave">저장</button></div></div>’;
-const v=createView(html);transitionTo(v,‘forward’);
-setTimeout(bindCellEditorEvents,ANIM+20);
-}
-function bindCellEditorEvents(){
-const v=currentView;if(!v)return;
-const ti=v.querySelector(’#edText’),od=v.querySelector(’#edOptions’),ip=v.querySelector(’#edImgPicker’),idl=v.querySelector(’#edImgDel’);
-if(ti)ti.addEventListener(‘input’,()=>{state.editor.value=ti.value;updateOptSel()});
-if(od)od.addEventListener(‘click’,e=>{
-const b=e.target.closest(’.opt’);if(!b)return;
-state.editor.value=b.dataset.opt;
-if(ti)ti.value=state.editor.value;
-updateOptSel();
-});
-if(ip)ip.addEventListener(‘change’,async e=>{
-const f=e.target.files&&e.target.files[0];if(!f)return;
-try{toast(‘이미지 처리 중…’);state.editor.image=await resizeImage(f,800,0.8);renderEditor()}
-catch(err){toast(‘이미지 실패’)}
-});
-if(idl)idl.addEventListener(‘click’,()=>{state.editor.image=’’;renderEditor()});
-v.querySelector(’#edCancel’).addEventListener(‘click’,editorCancel);
-v.querySelector(’#edSave’).addEventListener(‘click’,saveCellEdit);
-}
-function updateOptSel(){
-if(!currentView)return;
-currentView.querySelectorAll(’.opt’).forEach(b=>b.classList.toggle(‘selected’,b.dataset.opt===state.editor.value));
-}
-function saveCellEdit(){
-const tab=currentTab(),row=tab.rows[state.rowCursor],ed=state.editor;
-const nv=ed.type===‘image’?ed.image:ed.value;
-if(row.cells[ed.colIdx]!==nv){row.cells[ed.colIdx]=nv;markDirty()}
-state.editor=null;toast(‘저장됨’);goSheet(state.currentTabIdx,‘backward’);
-}
-
-function renderLabelEditor(){
-const tab=currentTab(),row=tab.rows[state.rowCursor],ed=state.editor;
-let html=’<div class="editor"><div class="ed-label">행 (1열)</div>’;
-html+=’<div class="ed-rowname">’+esc(row.cells[0]||’—’)+’</div>’;
-html+=’<div class="ed-field">라벨</div>’;
-html+=’<input type="text" class="ed-input" id="edText" value="'+esc(ed.value)+'"/>’;
-html+=’<div class="danger-zone"><button id="delRow">이 행 삭제</button></div>’;
-html+=’<div class="editor-actions"><button class="cancel" id="edCancel">취소</button><button class="save" id="edSave">저장</button></div></div>’;
-const v=createView(html);transitionTo(v,‘forward’);
-setTimeout(()=>{
-const i=v.querySelector(’#edText’);
-if(i){i.addEventListener(‘input’,()=>state.editor.value=i.value);setTimeout(()=>i.focus(),100)}
-v.querySelector(’#edCancel’).addEventListener(‘click’,editorCancel);
-v.querySelector(’#edSave’).addEventListener(‘click’,saveLabelEdit);
-v.querySelector(’#delRow’).addEventListener(‘click’,deleteCurrentRow);
-},ANIM+20);
-}
-function saveLabelEdit(){
-const tab=currentTab(),row=tab.rows[state.rowCursor];
-const nl=(state.editor.value||’’).trim();
-if(!nl){toast(‘라벨은 필수’);return}
-if(row.cells[0]!==nl){row.cells[0]=nl;markDirty()}
-state.editor=null;toast(‘저장됨’);goSheet(state.currentTabIdx,‘backward’);
-}
-function deleteCurrentRow(){
-const tab=currentTab(),row=tab.rows[state.rowCursor];
-if(!row)return;
-if(!confirm(‘이 행을 삭제할까요?\n’+(row.cells[0]||’(라벨 없음)’)))return;
-tab.rows.splice(state.rowCursor,1);
-if(state.rowCursor>=tab.rows.length)state.rowCursor=Math.max(0,tab.rows.length-1);
-markDirty();state.editor=null;toast(‘행 삭제됨’);goSheet(state.currentTabIdx,‘backward’);
-}
-
-function renderHeaderEditor(){
-const ed=state.editor;
-let html=’<div class="editor"><div class="ed-label">열 (’+(ed.colIdx+1)+‘열)</div>’;
-html+=’<div class="ed-rowname">’+esc(ed.header)+’</div>’;
-html+=’<div class="ed-field">헤더명</div>’;
-html+=’<input type="text" class="ed-input" id="edHeader" value="'+esc(ed.header)+'"/>’;
-html+=’<div class="ed-field" style="margin-top:14px;">타입</div>’;
-html+=’<div class="options-row" id="edType">’;
-html+=’<button class="opt '+(ed.type==='text'?'selected':'')+'" data-val="text">텍스트</button>’;
-html+=’<button class="opt '+(ed.type==='image'?'selected':'')+'" data-val="image">이미지</button>’;
-html+=’</div>’;
-html+=’<div id="optionsField" style="display:'+(ed.type==='text'?'block':'none')+';">’;
-html+=’<div class="ed-field">옵션 (콤마)</div>’;
-html+=’<input type="text" class="ed-input" id="edOpts" value="'+esc(ed.optionsStr)+'"/></div>’;
-html+=’<div class="danger-zone"><button id="delCol">이 열 삭제</button></div>’;
-html+=’<div class="editor-actions"><button class="cancel" id="edCancel">취소</button><button class="save" id="edSave">저장</button></div></div>’;
-const v=createView(html);transitionTo(v,‘forward’);
-setTimeout(()=>{
-const hi=v.querySelector(’#edHeader’),oi=v.querySelector(’#edOpts’),td=v.querySelector(’#edType’),of=v.querySelector(’#optionsField’);
-if(hi)hi.addEventListener(‘input’,()=>{
-state.editor.header=hi.value;
-if(IMG_RE.test(hi.value)){
-state.editor.type=‘image’;
-td.querySelectorAll(’.opt’).forEach(b=>b.classList.toggle(‘selected’,b.dataset.val===‘image’));
-of.style.display=‘none’;
-}
-});
-if(oi)oi.addEventListener(‘input’,()=>state.editor.optionsStr=oi.value);
-if(td)td.addEventListener(‘click’,e=>{
-const b=e.target.closest(’.opt’);if(!b)return;
-state.editor.type=b.dataset.val;
-td.querySelectorAll(’.opt’).forEach(x=>x.classList.toggle(‘selected’,x===b));
-of.style.display=state.editor.type===‘text’?‘block’:‘none’;
-});
-v.querySelector(’#edCancel’).addEventListener(‘click’,editorCancel);
-v.querySelector(’#edSave’).addEventListener(‘click’,saveHeaderEdit);
-v.querySelector(’#delCol’).addEventListener(‘click’,deleteCurrentCol);
-},ANIM+20);
-}
-function saveHeaderEdit(){
-const tab=currentTab(),ed=state.editor;
-const nh=(ed.header||’’).trim();
-if(!nh){toast(‘헤더명 필수’);return}
-if(tab.headers.some((h,i)=>i!==ed.colIdx&&h===nh)){toast(‘중복 이름’);return}
-const nt=IMG_RE.test(nh)?‘image’:ed.type;
-tab.headers[ed.colIdx]=nh;
-if(tab.columnTypes[ed.colIdx]!==nt)tab.rows.forEach(r=>r.cells[ed.colIdx]=’’);
-tab.columnTypes[ed.colIdx]=nt;
-if(nt===‘text’){
-const opts=(ed.optionsStr||’’).split(’,’).map(s=>s.trim()).filter(s=>s);
-if(opts.length)tab.columnOptions[ed.colIdx]=opts;else delete tab.columnOptions[ed.colIdx];
-}else delete tab.columnOptions[ed.colIdx];
-markDirty();state.editor=null;toast(‘저장됨’);goSheet(state.currentTabIdx,‘backward’);
-}
-function deleteCurrentCol(){
-const tab=currentTab(),c=state.editor.colIdx;
-if(c===0){toast(‘라벨 열 삭제 불가’);return}
-if(!confirm(‘열 “’+tab.headers[c]+’“을(를) 삭제할까요?’))return;
-tab.headers.splice(c,1);tab.columnTypes.splice(c,1);
-const no={};
-Object.keys(tab.columnOptions).forEach(k=>{
-const n=Number(k);
-if(n<c)no[n]=tab.columnOptions[n];
-else if(n>c)no[n-1]=tab.columnOptions[n];
-});
-tab.columnOptions=no;
-tab.rows.forEach(r=>r.cells.splice(c,1));
-if(state.colCursor>=tab.headers.length)state.colCursor=tab.headers.length-1;
-if(state.colCursor<0)state.colCursor=0;
-markDirty();state.editor=null;toast(‘열 삭제됨’);goSheet(state.currentTabIdx,‘backward’);
-}
-
-function renderNewRowEditor(){
-const ed=state.editor;
-let html=’<div class="editor"><div class="ed-label">새 행</div>’;
-html+=’<div class="ed-rowname">행 추가</div>’;
-html+=’<div class="ed-field">라벨 (1열)</div>’;
-html+=’<input type="text" class="ed-input" id="edText" placeholder="예: 204호" value="'+esc(ed.label)+'"/>’;
-html+=’<div style="color:#666;font-size:12px;margin-top:8px;">다른 값은 행 생성 후 편집.</div>’;
-html+=’<div class="editor-actions"><button class="cancel" id="edCancel">취소</button><button class="save" id="edSave">추가</button></div></div>’;
-const v=createView(html);transitionTo(v,‘forward’);
-setTimeout(()=>{
-const i=v.querySelector(’#edText’);
-if(i){i.addEventListener(‘input’,()=>state.editor.label=i.value);setTimeout(()=>i.focus(),100)}
-v.querySelector(’#edCancel’).addEventListener(‘click’,editorCancel);
-v.querySelector(’#edSave’).addEventListener(‘click’,saveNewRow);
-},ANIM+20);
-}
-function saveNewRow(){
-const tab=currentTab();
-const l=(state.editor.label||’’).trim();
-if(!l){toast(‘라벨 필수’);return}
-const cells=tab.headers.map(()=>’’);cells[0]=l;
-tab.rows.push({cells});
-state.rowCursor=tab.rows.length-1;
-state.colCursor=Math.min(1,tab.headers.length-1);
-markDirty();state.editor=null;toast(‘행 추가됨’);goSheet(state.currentTabIdx,‘backward’);
-}
-
-function renderNewColEditor(){
-const ed=state.editor;
-let html=’<div class="editor"><div class="ed-label">새 열</div>’;
-html+=’<div class="ed-rowname">열 추가</div>’;
-html+=’<div class="ed-field">헤더명</div>’;
-html+=’<input type="text" class="ed-input" id="edHeader" placeholder="예: 상태, 사진" value="'+esc(ed.header)+'"/>’;
-html+=’<div class="ed-field" style="margin-top:14px;">타입</div>’;
-html+=’<div class="options-row" id="edType">’;
-html+=’<button class="opt '+(ed.type==='text'?'selected':'')+'" data-val="text">텍스트</button>’;
-html+=’<button class="opt '+(ed.type==='image'?'selected':'')+'" data-val="image">이미지</button>’;
-html+=’</div>’;
-html+=’<div id="optionsField" style="display:'+(ed.type==='text'?'block':'none')+';">’;
-html+=’<div class="ed-field">옵션 (콤마)</div>’;
-html+=’<input type="text" class="ed-input" id="edOpts" value="'+esc(ed.optionsStr)+'"/></div>’;
-html+=’<div class="editor-actions"><button class="cancel" id="edCancel">취소</button><button class="save" id="edSave">추가</button></div></div>’;
-const v=createView(html);transitionTo(v,‘forward’);
-setTimeout(()=>{
-const hi=v.querySelector(’#edHeader’),oi=v.querySelector(’#edOpts’),td=v.querySelector(’#edType’),of=v.querySelector(’#optionsField’);
-if(hi){
-hi.addEventListener(‘input’,()=>{
-state.editor.header=hi.value;
-if(IMG_RE.test(hi.value)){
-state.editor.type=‘image’;
-td.querySelectorAll(’.opt’).forEach(b=>b.classList.toggle(‘selected’,b.dataset.val===‘image’));
-of.style.display=‘none’;
-}
-});
-setTimeout(()=>hi.focus(),100);
-}
-if(oi)oi.addEventListener(‘input’,()=>state.editor.optionsStr=oi.value);
-if(td)td.addEventListener(‘click’,e=>{
-const b=e.target.closest(’.opt’);if(!b)return;
-state.editor.type=b.dataset.val;
-td.querySelectorAll(’.opt’).forEach(x=>x.classList.toggle(‘selected’,x===b));
-of.style.display=state.editor.type===‘text’?‘block’:‘none’;
-});
-v.querySelector(’#edCancel’).addEventListener(‘click’,editorCancel);
-v.querySelector(’#edSave’).addEventListener(‘click’,saveNewCol);
-},ANIM+20);
-}
-function saveNewCol(){
-const tab=currentTab(),ed=state.editor;
-const h=(ed.header||’’).trim();
-if(!h){toast(‘헤더명 필수’);return}
-if(tab.headers.includes(h)){toast(‘중복’);return}
-const t=IMG_RE.test(h)?‘image’:ed.type;
-tab.headers.push(h);tab.columnTypes.push(t);
-tab.rows.forEach(r=>r.cells.push(’’));
-if(t===‘text’&&ed.optionsStr){
-const opts=ed.optionsStr.split(’,’).map(s=>s.trim()).filter(s=>s);
-if(opts.length)tab.columnOptions[tab.headers.length-1]=opts;
-}
-state.colCursor=tab.headers.length-1;
-markDirty();state.editor=null;toast(‘열 추가됨’);goSheet(state.currentTabIdx,‘backward’);
-}
-
-function editorCancel(){state.editor=null;goSheet(state.currentTabIdx,‘backward’)}
-function showEmptyView(msg,dir){transitionTo(createView(’<div class="empty">’+msg+’</div>’),dir)}
-function currentTab(){return workbook?workbook.tabs[state.currentTabIdx]:null}
-function setTitle(t){document.getElementById(‘screenTitle’).textContent=t}
-
-function applyListCursor(){
-if(!currentView)return;
-const ul=currentView.querySelector(’.list ul’);if(!ul)return;
-const lis=[…ul.querySelectorAll(‘li’)];
-lis.forEach((li,i)=>li.classList.toggle(‘active’,i===state.rowCursor));
-if(!lis.length)return;
-const liH=lis[0].getBoundingClientRect().height||44;
-const listH=currentView.querySelector(’.list’).getBoundingClientRect().height;
-const visible=Math.max(1,Math.floor(listH/liH));
-const anchor=Math.min(state.rowCursor,Math.max(0,lis.length-visible));
-ul.style.transform=‘translateY(’+(-anchor*liH)+‘px)’;
-}
-
-function esc(s){return String(s==null?’’:s).replace(/[&<>”’]/g,c=>({’&’:’&’,’<’:’<’,’>’:’>’,’”’:’"’,”’”:’'’}[c]))}
-
-const toastEl=document.getElementById(‘toast’);
 let toastTimer;
 function toast(msg){
-if(!toastEl){console.log(‘toast:’,msg);return}
-toastEl.textContent=msg;toastEl.classList.add(‘show’);
-clearTimeout(toastTimer);
-toastTimer=setTimeout(()=>toastEl.classList.remove(‘show’),2000);
+  const el = $('toast');
+  if (!el) { console.log('[toast]', msg); return; }
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
 }
 
-function moveRow(d){
-if(state.view===‘tabs’){
-const max=((workbook&&workbook.tabs)?workbook.tabs.length:0)-1;
-state.rowCursor=Math.max(0,Math.min(max,state.rowCursor+d));
-applyListCursor();
-}else if(state.view===‘sheet’){
-const tab=currentTab();if(!tab)return;
-state.rowCursor=Math.max(-1,Math.min(tab.rows.length,state.rowCursor+d));
-applyCellCursor();scrollActiveIntoView();
-}else if(state.view===‘bigview’){
-const tab=currentTab();if(!tab)return;
-let n=state.rowCursor+d;
-if(n<-1)n=-1;
-if(n>tab.rows.length-1)n=tab.rows.length-1;
-if(n===state.rowCursor)return;
-state.rowCursor=n;refreshBig();
-}
-}
-function moveCol(d){
-if(state.view===‘sheet’){
-const tab=currentTab();if(!tab)return;
-state.colCursor=Math.max(0,Math.min(tab.headers.length,state.colCursor+d));
-applyCellCursor();scrollActiveIntoView();
-}else if(state.view===‘bigview’){
-const tab=currentTab();if(!tab)return;
-let n=state.colCursor+d;
-if(n<0)n=0;
-if(n>tab.headers.length-1)n=tab.headers.length-1;
-if(n===state.colCursor)return;
-state.colCursor=n;refreshBig();
-}
-}
-function refreshBig(){
-if(state.rowCursor===-1)showBigViewForHeader();
-else showBigViewForCell();
+function setTitle(t){ $('screenTitle').textContent = t; }
+
+// ────────────────────────────────────────
+// 뷰 전환
+// ────────────────────────────────────────
+const viewStack = $('viewStack');
+let currentView = $('welcomeView');
+let animating = false;
+const ANIM = 280;
+
+function createView(html){
+  const v = document.createElement('div');
+  v.className = 'view';
+  v.innerHTML = html;
+  return v;
 }
 
-// 휠 드래그
-let dragging=false,lastAngle=0,accum=0;
-const DEG=22;
+function transitionTo(newView, dir){
+  dir = dir || 'forward';
+  if (animating && currentView) {
+    // 애니메이션 중이면 즉시 정리
+  }
+  animating = true;
+  const old = currentView;
+  currentView = newView;
+
+  newView.classList.add(dir === 'forward' ? 'slide-in-right' : 'slide-in-left');
+  viewStack.appendChild(newView);
+  void newView.offsetWidth; // reflow
+  newView.classList.remove('slide-in-right', 'slide-in-left');
+  newView.classList.add('show');
+
+  if (old) {
+    old.classList.remove('show');
+    old.classList.add(dir === 'forward' ? 'slide-out-left' : 'slide-out-right');
+  }
+
+  setTimeout(() => {
+    if (old && old !== currentView) old.remove();
+    animating = false;
+  }, ANIM);
+}
+
+// ────────────────────────────────────────
+// 화면들
+// ────────────────────────────────────────
+function openSetup(){
+  state.view = 'setup';
+  setTitle('설정');
+
+  let html = '<div class="welcome">';
+  html += '<div class="pin-icon">⚙️</div>';
+  html += '<h1>Google 시트 연결</h1>';
+  html += '<p style="font-size:12px;">Apps Script 웹앱 URL을<br/>붙여넣어 주세요</p>';
+  html += '<input type="text" id="urlInput" ';
+  html += 'placeholder="https://script.google.com/..." ';
+  html += 'style="width:90%;max-width:340px;padding:8px 10px;border:1px solid #c9c4b8;border-radius:6px;font-size:13px;margin:8px 0;" ';
+  html += 'value="' + esc(scriptUrl) + '"/>';
+  html += '<button class="btn" onclick="saveScriptUrl()">저장</button>';
+  html += '<button class="btn ghost" onclick="pasteFromClipboard()">📋 클립보드에서 붙여넣기</button>';
+  html += '<div class="small">아직 준비 안 되셨다면<br/>다음 단계에서 안내해드려요</div>';
+  html += '</div>';
+
+  const v = createView(html);
+  transitionTo(v, 'forward');
+}
+
+async function pasteFromClipboard(){
+  try {
+    if (!navigator.clipboard) {
+      toast('클립보드 권한 없음');
+      return;
+    }
+    const text = await navigator.clipboard.readText();
+    const input = $('urlInput');
+    if (input) {
+      input.value = text;
+      toast('붙여넣음');
+    }
+  } catch(e) {
+    toast('붙여넣기 실패');
+  }
+}
+
+function saveScriptUrl(){
+  const input = $('urlInput');
+  if (!input) return;
+  const url = input.value.trim();
+
+  if (!url) {
+    toast('URL을 입력하세요');
+    return;
+  }
+  if (!/^https:\/\/script\.google\.com\//.test(url)) {
+    toast('Apps Script URL 형식이 아니에요');
+    return;
+  }
+
+  scriptUrl = url;
+  localStorage.setItem(LS_URL, url);
+  toast('저장됨');
+  // 다음 단계: 시트 데이터 로드
+  toast('시트 연동은 다음 업데이트에서 추가됩니다');
+}
+
+function goBack(){
+  if (state.view === 'setup') {
+    state.view = 'welcome';
+    setTitle('pindrop');
+    transitionTo($('welcomeView') || rebuildWelcome(), 'backward');
+  }
+}
+
+function rebuildWelcome(){
+  const v = document.createElement('div');
+  v.className = 'view';
+  v.id = 'welcomeView';
+  v.innerHTML = '<div class="welcome"><div class="pin-icon">📍</div><h1>pindrop</h1><p>장소별 정보를<br/>iPod처럼 기록하기</p><button class="btn" onclick="openSetup()">시작하기</button><div class="small" id="appStatus">' + (scriptUrl ? '✓ 시트 연결됨' : 'Google 시트 연결이 필요해요') + '</div></div>';
+  return v;
+}
+
+// ────────────────────────────────────────
+// 컨트롤 (휠 드래그 + 화살표 + 버튼)
+// ────────────────────────────────────────
+const wheel = $('wheel');
+let diskRot = 0;
+function rotateDisk(d){ diskRot += d; wheel.style.setProperty('--rot', diskRot + 'deg'); }
+
+let dragging = false, lastAngle = 0, accum = 0;
+const DEG = 22;
+
 function angleFromEvent(e){
-const r=wheel.getBoundingClientRect();
-return Math.atan2(e.clientY-(r.top+r.height/2),e.clientX-(r.left+r.width/2))*180/Math.PI;
-}
-wheel.addEventListener(‘pointerdown’,e=>{
-if(e.target.closest(’.center-btn’)||e.target.closest(’.arrow’))return;
-dragging=true;wheel.classList.add(‘dragging’);
-wheel.setPointerCapture(e.pointerId);
-lastAngle=angleFromEvent(e);
-});
-wheel.addEventListener(‘pointermove’,e=>{
-if(!dragging)return;
-const a=angleFromEvent(e);
-let d=a-lastAngle;
-if(d>180)d-=360;if(d<-180)d+=360;
-accum+=d;lastAngle=a;
-rotateDisk(d);
-while(accum>=DEG){moveRow(1);accum-=DEG}
-while(accum<=-DEG){moveRow(-1);accum+=DEG}
-});
-function endDrag(){if(!dragging)return;dragging=false;wheel.classList.remove(‘dragging’);accum=0}
-wheel.addEventListener(‘pointerup’,endDrag);
-wheel.addEventListener(‘pointercancel’,endDrag);
-wheel.addEventListener(‘wheel’,e=>{e.preventDefault();moveRow(e.deltaY>0?1:-1)},{passive:false});
-
-function handleMenu(){
-if(document.getElementById(‘dlModal’).classList.contains(‘show’))return closeDownload();
-if(state.view===‘editor’)editorCancel();
-else if(state.view===‘bigview’)goSheet(state.currentTabIdx,‘backward’);
-else if(state.view===‘sheet’)goTabs();
-else if(state.view===‘tabs’)showStart();
-}
-function handleCenter(){
-if(state.view===‘tabs’)goSheet(state.rowCursor);
-else if(state.view===‘sheet’)onCenterPress();
-else if(state.view===‘bigview’)goSheet(state.currentTabIdx,‘backward’);
+  const r = wheel.getBoundingClientRect();
+  return Math.atan2(e.clientY - (r.top + r.height/2),
+                    e.clientX - (r.left + r.width/2)) * 180 / Math.PI;
 }
 
-document.getElementById(‘btnMenu’).addEventListener(‘click’,handleMenu);
-document.getElementById(‘btnEdit’).addEventListener(‘click’,onEditPress);
-document.getElementById(‘centerBtn’).addEventListener(‘click’,handleCenter);
-document.getElementById(‘btnUp’).addEventListener(‘click’,()=>moveRow(-1));
-document.getElementById(‘btnDown’).addEventListener(‘click’,()=>moveRow(1));
-document.getElementById(‘btnLeft’).addEventListener(‘click’,()=>moveCol(-1));
-document.getElementById(‘btnRight’).addEventListener(‘click’,()=>moveCol(1));
-document.getElementById(‘btnSave’).addEventListener(‘click’,()=>{
-if(!workbook)return;saveLocal();dirty=false;updateDirty();toast(‘저장됨’);
+wheel.addEventListener('pointerdown', (e) => {
+  if (e.target.closest('.center-btn') || e.target.closest('.arrow')) return;
+  dragging = true;
+  wheel.classList.add('dragging');
+  wheel.setPointerCapture(e.pointerId);
+  lastAngle = angleFromEvent(e);
 });
-document.getElementById(‘btnExport’).addEventListener(‘click’,buildAndExport);
-document.addEventListener(‘change’,e=>{if(e.target&&e.target.id===‘openFile’)onFileOpen(e)});
-document.addEventListener(‘keydown’,e=>{
-if(e.target.tagName===‘TEXTAREA’||e.target.tagName===‘INPUT’)return;
-if(e.key===‘ArrowDown’)moveRow(1);
-else if(e.key===‘ArrowUp’)moveRow(-1);
-else if(e.key===‘ArrowLeft’)moveCol(-1);
-else if(e.key===‘ArrowRight’)moveCol(1);
-else if(e.key===‘Enter’)handleCenter();
-else if(e.key===‘e’||e.key===‘E’)onEditPress();
-else if(e.key===‘Escape’||e.key===‘Backspace’)handleMenu();
+wheel.addEventListener('pointermove', (e) => {
+  if (!dragging) return;
+  const a = angleFromEvent(e);
+  let d = a - lastAngle;
+  if (d > 180) d -= 360;
+  if (d < -180) d += 360;
+  accum += d;
+  lastAngle = a;
+  rotateDisk(d);
+  while (accum >= DEG) { moveCursor(1); accum -= DEG; }
+  while (accum <= -DEG) { moveCursor(-1); accum += DEG; }
 });
-window.addEventListener(‘beforeunload’,e=>{if(dirty){e.preventDefault();e.returnValue=’’}});
+function endDrag(){
+  if (!dragging) return;
+  dragging = false;
+  wheel.classList.remove('dragging');
+  accum = 0;
+}
+wheel.addEventListener('pointerup', endDrag);
+wheel.addEventListener('pointercancel', endDrag);
 
-// 전역에 명시적으로 함수 노출 (onclick 속성에서 호출 가능하게)
-window.createNew=createNew;
-window.onFileOpen=onFileOpen;
-window.resetAll=resetAll;
-window.closeDownload=closeDownload;
+// 휠 마우스 휠 (데스크톱)
+wheel.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  moveCursor(e.deltaY > 0 ? 1 : -1);
+}, { passive: false });
 
-start();
+function moveCursor(d){
+  // 다음 단계에서 리스트/시트별 커서 이동 구현
+  // 지금은 placeholder
+}
+
+$('btnMenu').addEventListener('click', goBack);
+$('btnEdit').addEventListener('click', () => toast('편집은 다음 업데이트에서'));
+$('centerBtn').addEventListener('click', () => toast('선택은 다음 업데이트에서'));
+$('btnUp').addEventListener('click', () => moveCursor(-1));
+$('btnDown').addEventListener('click', () => moveCursor(1));
+$('btnLeft').addEventListener('click', () => toast('열 이동'));
+$('btnRight').addEventListener('click', () => toast('열 이동'));
+$('btnSync').addEventListener('click', () => {
+  if (!scriptUrl) {
+    toast('먼저 Google 시트를 연결하세요');
+    openSetup();
+    return;
+  }
+  toast('시트 연동은 다음 업데이트에서');
+});
+$('btnAdd').addEventListener('click', () => toast('추가는 다음 업데이트에서'));
+
+// 키보드
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key === 'ArrowDown') moveCursor(1);
+  else if (e.key === 'ArrowUp') moveCursor(-1);
+  else if (e.key === 'Escape' || e.key === 'Backspace') goBack();
+});
+
+// 전역 노출 (onclick 속성에서 호출)
+window.openSetup = openSetup;
+window.saveScriptUrl = saveScriptUrl;
+window.pasteFromClipboard = pasteFromClipboard;
+window.goBack = goBack;
+
+// ────────────────────────────────────────
+// Service Worker 등록
+// ────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js')
+      .then((reg) => console.log('SW registered', reg.scope))
+      .catch((err) => console.warn('SW failed', err));
+  });
+}
+
+// 시작 시 상태 메시지 업데이트
+if (scriptUrl) {
+  const s = $('appStatus');
+  if (s) s.textContent = '✓ 시트 연결됨';
+}
 </script>
-
 </body>
 </html>

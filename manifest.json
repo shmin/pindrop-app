@@ -1,0 +1,32 @@
+{
+  "name": "pindrop",
+  "short_name": "pindrop",
+  "description": "iPod-style data tracker for Google Sheets",
+  "start_url": "/pindrop-app/",
+  "scope": "/pindrop-app/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#d9d5cc",
+  "theme_color": "#2e55a8",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

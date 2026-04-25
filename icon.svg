@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bodyG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbf9f4"/>
+      <stop offset="100%" stop-color="#dcd8ce"/>
+    </linearGradient>
+    <linearGradient id="screenG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#cfd7c7"/>
+      <stop offset="100%" stop-color="#b9c3ac"/>
+    </linearGradient>
+    <linearGradient id="barG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4a77c9"/>
+      <stop offset="100%" stop-color="#2e55a8"/>
+    </linearGradient>
+    <radialGradient id="wheelG" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#f4f1ea"/>
+      <stop offset="70%" stop-color="#dcd8ce"/>
+      <stop offset="100%" stop-color="#c9c4b8"/>
+    </radialGradient>
+    <radialGradient id="centerG" cx="50%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="75%" stop-color="#e8e4da"/>
+    </radialGradient>
+  </defs>
+
+  <!-- 본체 라운드 사각형 -->
+  <rect x="32" y="32" width="448" height="448" rx="96" ry="96" fill="url(#bodyG)" stroke="#c9c4b8" stroke-width="2"/>
+
+  <!-- 화면 -->
+  <rect x="80" y="72" width="352" height="200" rx="8" ry="8" fill="url(#screenG)" stroke="#1a1a1a" stroke-width="6"/>
+
+  <!-- 화면 타이틀바 -->
+  <rect x="86" y="78" width="340" height="38" rx="4" ry="4" fill="url(#barG)"/>
+  <text x="256" y="106" text-anchor="middle" fill="#fff" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700">pindrop</text>
+
+  <!-- 화면 내용: 핀 마커 -->
+  <g transform="translate(256 195)">
+    <path d="M 0 -45 C -22 -45 -38 -28 -38 -8 C -38 14 0 45 0 45 C 0 45 38 14 38 -8 C 38 -28 22 -45 0 -45 Z" fill="#2e55a8" stroke="#1a3a78" stroke-width="2"/>
+    <circle cx="0" cy="-10" r="11" fill="#fff"/>
+  </g>
+
+  <!-- 휠 -->
+  <circle cx="256" cy="370" r="92" fill="url(#wheelG)" stroke="#b9b4a8" stroke-width="2"/>
+
+  <!-- 휠 4방향 표시 (작은 점) -->
+  <circle cx="256" cy="296" r="3" fill="#888"/>
+  <circle cx="256" cy="444" r="3" fill="#888"/>
+  <circle cx="182" cy="370" r="3" fill="#888"/>
+  <circle cx="330" cy="370" r="3" fill="#888"/>
+
+  <!-- 가운데 버튼 -->
+  <circle cx="256" cy="370" r="36" fill="url(#centerG)" stroke="#b9b4a8" stroke-width="1.5"/>
+</svg>
