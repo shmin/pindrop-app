@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>시트 사진 등록</title>
+  <style>
+    :root{--g:#188038;--gd:#126d2f;--gs:#e8f5eb;--ink:#202124;--muted:#66706a;--line:#d9e1dc;--bg:#f5f8f6;--white:#fff;--danger:#c7332d}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Pretendard,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif}.app{max-width:1060px;margin:auto;padding:24px 18px 40px}header{display:flex;align-items:center;gap:14px;border-bottom:2px solid var(--g);padding-bottom:18px}.mark{width:46px;height:46px;border-radius:13px;background:linear-gradient(145deg,#269549,#11712f);color:#fff;display:grid;place-items:center;font-size:24px;box-shadow:0 8px 20px #18803833}h1{font-size:23px;margin:0}header p{color:var(--muted);font-size:13px;margin:5px 0 0}.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:0 4px 14px #253b2d0a;margin-top:18px}.step{color:var(--g);font-size:10px;font-weight:800;letter-spacing:.14em}.card h2{font-size:20px;margin:6px 0}.sub{color:var(--muted);font-size:12px;margin:0 0 18px}.connect-row{display:grid;grid-template-columns:1fr auto;gap:8px}input,select,textarea{width:100%;border:1px solid #c8d2cb;border-radius:10px;background:#fff;padding:0 12px;outline:none;font:inherit;color:var(--ink)}input,select{height:46px}textarea{min-height:88px;padding-top:12px;resize:vertical}input:focus,select:focus,textarea:focus{border-color:var(--g);box-shadow:0 0 0 3px #18803814}button{font:inherit;cursor:pointer}.primary{border:0;border-radius:10px;background:var(--g);color:#fff;font-weight:800;padding:0 18px;min-height:46px}.primary:hover{background:var(--gd)}.primary:disabled{opacity:.55;cursor:wait}.privacy{display:flex;gap:7px;align-items:center;color:var(--muted);font-size:11px;margin:10px 0 0}.workspace{display:grid;grid-template-columns:270px 1fr;gap:16px}.sheet-name{font-size:12px;color:var(--muted);margin-bottom:14px}.field-label{display:block;font-size:12px;font-weight:750;margin:13px 0 7px}.columns{border:1px solid var(--line);border-radius:11px;overflow:hidden;margin-top:16px}.columns-head{display:flex;justify-content:space-between;padding:10px 12px;background:#f8faf8;color:var(--muted);font-size:11px}.column{display:grid;grid-template-columns:23px 1fr auto;align-items:center;gap:8px;padding:9px 10px;border-top:1px solid #edf0ee;font-size:11px}.letter{width:22px;height:22px;border-radius:6px;background:var(--gs);color:var(--g);display:grid;place-items:center;font-weight:800}.kind{color:#7d8780;font-size:9px}.photo-rule{display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:9px;background:var(--gs);border:1px solid #bfe0c7;border-radius:11px;padding:11px;margin-top:13px}.photo-rule>span{width:32px;height:32px;border-radius:9px;background:#fff;display:grid;place-items:center}.photo-rule strong{font-size:11px}.photo-rule p{font-size:9px;color:var(--muted);margin:3px 0 0}.photo-rule b{font-size:10px;color:#fff;background:var(--g);border-radius:99px;padding:5px 8px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:750}.field.wide{grid-column:1/-1}.field em{color:var(--danger);font-style:normal}.checkbox{height:46px;border:1px solid #c8d2cb;border-radius:10px;display:flex;align-items:center;gap:9px;padding:0 12px}.checkbox input{width:18px;height:18px}.photo-head{display:flex;justify-content:space-between;align-items:center;margin:18px 0 8px;font-size:12px;font-weight:800}.photo-head small{background:var(--gs);color:var(--g);padding:4px 8px;border-radius:99px}.drop{width:100%;min-height:135px;border:1.5px dashed #68b47a;border-radius:13px;background:#f5fbf6;color:var(--g);display:flex;flex-direction:column;align-items:center;justify-content:center}.drop:hover{background:#ecf8ef}.drop b{font-size:15px;margin-top:7px}.drop span{font-size:11px;color:var(--muted);margin-top:5px}.camera{width:45px;height:45px;border-radius:50%;background:var(--gs);display:grid;place-items:center;font-size:22px}.preview{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:10px}.preview figure{position:relative;margin:0;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#f0f3f1}.preview img{display:block;width:100%;height:110px;object-fit:cover}.preview figcaption{font-size:9px;color:var(--muted);padding:6px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.remove{position:absolute;right:6px;top:6px;width:25px;height:25px;border:0;border-radius:50%;background:#fffffff0}.submit{width:100%;margin-top:16px;min-height:54px;font-size:15px;box-shadow:0 8px 18px #1880382e}.hidden{display:none!important}.error{color:var(--danger);background:#fff1f0;border:1px solid #f3c6c3;border-radius:10px;padding:10px 12px;font-size:11px;margin-top:10px}.toast{position:fixed;right:22px;bottom:22px;background:#1e2c22;color:#fff;border-radius:13px;padding:13px 16px;box-shadow:0 12px 35px #0003;min-width:270px}.toast b{display:block;font-size:13px}.toast span{font-size:10px;color:#c5d1c8}.loader{display:inline-block;width:14px;height:14px;border:2px solid #ffffff66;border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;margin-right:6px;vertical-align:-2px}@keyframes spin{to{transform:rotate(360deg)}}@media(max-width:760px){.app{padding:16px 12px 30px}.workspace{grid-template-columns:1fr}.connect-row{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.field.wide{grid-column:auto}.preview{grid-template-columns:repeat(2,1fr)}.card{padding:18px}header p{display:none}.toast{left:12px;right:12px;bottom:12px}}
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header><div class="mark">▦</div><div><h1>시트 사진 등록</h1><p>시트 구조를 읽고 사진을 셀 위치에 직접 고정합니다</p></div></header>
+
+    <section class="card" id="connectCard">
+      <span class="step">STEP 1</span><h2>스프레드시트 연결</h2><p class="sub">첫 번째 행에는 열 이름이 있어야 합니다.</p>
+      <div class="connect-row"><input id="sheetUrl" placeholder="Google 스프레드시트 주소를 붙여넣으세요"><button class="primary" id="connectBtn" onclick="connectSheet()">시트 불러오기</button></div>
+      <p class="privacy">● 사진은 Drive나 외부 주소에 저장하지 않고 시트에 직접 삽입됩니다.</p>
+      <div id="connectError" class="error hidden"></div>
+    </section>
+
+    <div id="workspace" class="workspace hidden">
+      <aside class="card">
+        <span class="step">STEP 2</span><h2>시트 구조 확인</h2><div class="sheet-name" id="sheetName"></div>
+        <label class="field-label" for="tabSelect">등록할 시트 탭</label><select id="tabSelect" onchange="changeTab()"></select>
+        <div class="columns"><div class="columns-head"><span>인식한 열</span><strong id="columnCount"></strong></div><div id="columns"></div></div>
+        <div class="photo-rule"><span>📷</span><div><strong>사진 수 자동 인식</strong><p id="photoRuleText"></p></div><b id="photoLimitBadge"></b></div>
+      </aside>
+
+      <section class="card">
+        <span class="step">STEP 3</span><h2 id="formTitle">새 행 추가</h2><p class="sub">시트 열 순서와 드롭다운 규칙에 맞춰 입력칸을 만들었습니다.</p>
+        <form id="recordForm" onsubmit="submitRecord(event)"><div id="dynamicFields" class="form-grid"></div>
+          <div class="photo-head"><span>사진</span><small id="photoCount">0/0장</small></div>
+          <input id="photoInput" class="hidden" type="file" accept="image/*" multiple onchange="pickPhotos(this.files)">
+          <button class="drop" type="button" onclick="document.getElementById('photoInput').click()"><span class="camera">📷</span><b>사진 촬영 또는 선택</b><span id="photoHint"></span></button>
+          <div class="preview" id="preview"></div>
+          <div id="submitError" class="error hidden"></div>
+          <button class="primary submit" id="submitBtn" type="submit">선택한 시트에 등록</button>
+        </form>
+      </section>
+    </div>
+  </main>
+  <div id="toast" class="toast hidden"><b>시트에 등록했어요</b><span id="toastText"></span></div>
+
+  <script>
+    let schema=null,currentTab=null,photos=[];
+    const $=id=>document.getElementById(id);
+
+    function connectSheet(){
+      const url=$('sheetUrl').value.trim(); if(!url){showError('connectError','스프레드시트 주소를 입력해 주세요.');return}
+      setBusy('connectBtn',true,'읽는 중'); hideError('connectError');
+      google.script.run.withSuccessHandler(data=>{schema=data;renderWorkspace();setBusy('connectBtn',false,'시트 불러오기')}).withFailureHandler(err=>{showError('connectError',messageOf(err));setBusy('connectBtn',false,'시트 불러오기')}).getSpreadsheetSchema(url);
+    }
+
+    function renderWorkspace(){
+      $('sheetName').textContent=schema.spreadsheetName; $('tabSelect').innerHTML='';
+      schema.tabs.forEach(tab=>{const o=document.createElement('option');o.value=tab.id;o.textContent=tab.name;$('tabSelect').appendChild(o)});
+      $('workspace').classList.remove('hidden'); changeTab(); $('workspace').scrollIntoView({behavior:'smooth',block:'start'});
+    }
+
+    function changeTab(){
+      currentTab=schema.tabs.find(tab=>String(tab.id)===$('tabSelect').value)||schema.tabs[0]; photos=[]; renderColumns();renderForm();renderPhotos();
+    }
+
+    function renderColumns(){
+      $('columnCount').textContent=currentTab.fields.length+'개';$('columns').innerHTML='';
+      currentTab.fields.forEach((field,i)=>{const row=document.createElement('div');row.className='column';row.innerHTML=`<span class="letter">${columnLetter(field.column)}</span><b>${escapeHtml(field.label)}</b><span class="kind">${kindName(field.kind)}</span>`;$('columns').appendChild(row)});
+      const photoFields=currentTab.fields.filter(f=>f.kind==='photo');
+      $('photoLimitBadge').textContent=currentTab.photoLimit+'장';
+      $('photoRuleText').textContent=photoFields.length>1?`사진 열 ${photoFields.length}개를 찾았습니다.`:`열 이름에서 최대 ${currentTab.photoLimit}장을 찾았습니다.`;
+    }
+
+    function renderForm(){
+      $('formTitle').textContent=currentTab.name+'에 새 행 추가';$('dynamicFields').innerHTML='';
+      currentTab.fields.filter(f=>f.kind!=='photo').forEach(field=>{
+        const label=document.createElement('label');label.className='field'+(field.kind==='textarea'?' wide':'');
+        label.innerHTML=`<span>${escapeHtml(field.label)}${field.required?'<em> *</em>':''}</span>`;
+        let input;
+        if(field.kind==='textarea'){input=document.createElement('textarea')}
+        else if(field.kind==='select'){input=document.createElement('select');field.options.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;input.appendChild(o)})}
+        else if(field.kind==='checkbox'){input=document.createElement('div');input.className='checkbox';input.innerHTML='<input type="checkbox"><span>체크</span>'}
+        else{input=document.createElement('input');input.type=field.kind==='number'?'number':field.kind==='date'?'date':'text';if(field.kind==='date')input.value=new Date().toISOString().slice(0,10)}
+        input.dataset.column=field.column;input.dataset.kind=field.kind;if(field.required&&input.tagName!=='DIV')input.required=true;label.appendChild(input);$('dynamicFields').appendChild(label);
+      });
+      $('photoHint').textContent=`자동 압축 · 최대 ${currentTab.photoLimit}장 · 한 장당 2MB 이하`;
+    }
+
+    async function pickPhotos(fileList){
+      hideError('submitError');const room=currentTab.photoLimit-photos.length;const picked=Array.from(fileList).filter(f=>f.type.startsWith('image/')).slice(0,room);
+      for(const file of picked){try{const dataUrl=await compressPhoto(file);photos.push({name:toJpegName(file.name),dataUrl})}catch(e){showError('submitError',file.name+' 사진을 처리할 수 없습니다.')}}
+      $('photoInput').value='';renderPhotos();
+    }
+
+    function renderPhotos(){
+      $('photoCount').textContent=`${photos.length}/${currentTab.photoLimit}장`;$('preview').innerHTML='';
+      photos.forEach((photo,i)=>{const fig=document.createElement('figure');fig.innerHTML=`<img src="${photo.dataUrl}" alt="선택한 사진 ${i+1}"><figcaption>${escapeHtml(photo.name)}</figcaption><button class="remove" type="button" aria-label="사진 삭제" onclick="removePhoto(${i})">×</button>`;$('preview').appendChild(fig)});
+    }
+    function removePhoto(i){photos.splice(i,1);renderPhotos()}
+
+    function submitRecord(event){
+      event.preventDefault();hideError('submitError');const photoFields=currentTab.fields.filter(f=>f.kind==='photo');
+      if(photoFields.length&&photos.length===0){showError('submitError','사진을 한 장 이상 선택해 주세요.');return}
+      const values={};document.querySelectorAll('#dynamicFields [data-column]').forEach(el=>{const kind=el.dataset.kind;let value;if(kind==='checkbox')value=el.querySelector('input').checked;else value=el.value;values[el.dataset.column]={type:kind,value}});
+      const photoPayload=photos.map((photo,i)=>({name:photo.name,dataUrl:photo.dataUrl,column:photoFields.length>1?photoFields[i].column:photoFields[0].column}));
+      const payload={spreadsheetId:schema.spreadsheetId,sheetId:currentTab.id,values,photos:photoPayload};setBusy('submitBtn',true,'등록 중');
+      google.script.run.withSuccessHandler(result=>{setBusy('submitBtn',false,'선택한 시트에 등록');photos=[];renderPhotos();$('recordForm').reset();renderForm();$('toastText').textContent=`${result.sheetName} ${result.row}행 · 사진 ${result.photoCount}장`;$('toast').classList.remove('hidden');setTimeout(()=>$('toast').classList.add('hidden'),3500)}).withFailureHandler(err=>{setBusy('submitBtn',false,'선택한 시트에 등록');showError('submitError',messageOf(err))}).registerRecord(payload);
+    }
+
+    function compressPhoto(file){return new Promise((resolve,reject)=>{const img=new Image(),url=URL.createObjectURL(file);img.onload=()=>{URL.revokeObjectURL(url);let w=img.naturalWidth,h=img.naturalHeight,max=1200;if(Math.max(w,h)>max){const r=max/Math.max(w,h);w=Math.round(w*r);h=Math.round(h*r)}const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.drawImage(img,0,0,w,h);let q=.8,data=c.toDataURL('image/jpeg',q);while(data.length*0.75>1900000&&q>.45){q-=.08;data=c.toDataURL('image/jpeg',q)}resolve(data)};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('이미지 읽기 실패'))};img.src=url})}
+    function setBusy(id,busy,text){const b=$(id);b.disabled=busy;b.innerHTML=(busy?'<span class="loader"></span>':'')+text}
+    function showError(id,text){$(id).textContent=text;$(id).classList.remove('hidden')}
+    function hideError(id){$(id).classList.add('hidden')}
+    function messageOf(err){return err&&err.message?err.message:String(err||'오류가 발생했습니다.')}
+    function columnLetter(n){let s='';while(n){n--;s=String.fromCharCode(65+n%26)+s;n=Math.floor(n/26)}return s}
+    function kindName(k){return({photo:'사진',select:'선택',date:'날짜',number:'숫자',textarea:'긴 글',checkbox:'체크',text:'텍스트'})[k]||k}
+    function toJpegName(name){return name.replace(/\.[^.]+$/, '')+'.jpg'}
+    function escapeHtml(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[c])}
+  </script>
+</body>
+</html>
